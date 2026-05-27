@@ -1,3 +1,12 @@
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useAuthStore } from "./store/authStore";
+
+// Auth
+import Login from "./pages/Login";
+
+// Employee pages
+import Dashboard from "./pages/Dashboard";
 import MyProfile from "./pages/MyProfile";
 import MyRoster from "./pages/MyRoster";
 import MyClaims from "./pages/MyClaims";
@@ -7,6 +16,8 @@ import Notifications from "./pages/Notifications";
 import Settings from "./pages/Settings";
 import MyApprovals from "./pages/MyApprovals";
 import MyReports from "./pages/MyReports";
+
+// Admin pages
 import AdminDashboard from "./pages/AdminDashboard";
 import Employees from "./pages/Employees";
 import AddEmployee from "./pages/AddEmployee";
@@ -23,45 +34,182 @@ import AdminReports from "./pages/AdminReports";
 import Holidays from "./pages/Holidays";
 import AdminSettings from "./pages/AdminSettings";
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 1000 * 60 * 2,
+    },
+  },
+});
 
+// ===== Protected Route =====
+const ProtectedRoute = ({ children, allowedRoles }) => {
+  const { isAuth, user } = useAuthStore();
+  const role = user?.user?.user?.role;
 
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
+  if (!isAuth) return <Navigate to="/" replace />;
+
+  if (allowedRoles && !allowedRoles.includes(role)) {
+    return <Navigate to={role === "Admin" ? "/admin-dashboard" : "/dashboard"} replace />;
+  }
+
+  return children;
+};
+
+// ===== Root redirect based on auth state =====
+const RootRedirect = () => {
+  const { isAuth, user } = useAuthStore();
+  if (!isAuth) return <Login replace />;
+  return <Navigate to={user?.user?.user?.role === "Admin" ? "/admin-dashboard" : "/dashboard"} replace />;
+};
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-       <Route path="/profile" element={<MyProfile />} />
-       <Route path="/roster" element={<MyRoster />} />
-       <Route path="/claims" element={<MyClaims />} />
-       <Route path="/submit-claim" element={<SubmitClaim />} />
-       <Route path="/payroll" element={<MyPayroll />} />
-       <Route path="/notifications" element={<Notifications />} />
-       <Route path="/settings" element={<Settings />} />
-       <Route path="/approvals" element={<MyApprovals />} />
-       <Route path="/reports" element={<MyReports />} />
-       <Route path="/admin-dashboard" element={<AdminDashboard />} />
-       <Route path="/employees" element={<Employees />} />
-       <Route path="/employees/add" element={<AddEmployee />} />
-       <Route path="/teams" element={<Teams />} />
-       <Route path="/teams/add" element={<AddTeam />} />
-       <Route path="/shifts" element={<Shifts />} />
-       <Route path="/rotation-cycles" element={<RotationCycles />} />
-       <Route path="/admin-rosters" element={<AdminRosters />} />
-       <Route path="/admin-claims" element={<AdminClaims />} />
-       <Route path="/payroll-admin" element={<AdminPayroll />} />
-       <Route path="/payroll-admin/generate" element={<GeneratePayroll />} />
-       <Route path="/compliance" element={<Compliance />} />
-       <Route path="/admin-reports" element={<AdminReports />} />
-       <Route path="/holidays" element={<Holidays />} />
-       <Route path="/admin-settings" element={<AdminSettings />} />
-       
-      </Routes>
-    </BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <Routes>
+
+          {/* ===== PUBLIC ===== */}
+          <Route path="/" element={<RootRedirect />} />
+          <Route path="/login" element={<Login />} />
+
+          {/* ===== EMPLOYEE ROUTES ===== */}
+          <Route path="/dashboard" element={
+            <ProtectedRoute allowedRoles={["Employee"]}>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute allowedRoles={["Employee", "Admin"]}>
+              <MyProfile />
+            </ProtectedRoute>
+          } />
+          <Route path="/roster" element={
+            <ProtectedRoute allowedRoles={["Employee", "Admin"]}>
+              <MyRoster />
+            </ProtectedRoute>
+          } />
+          <Route path="/claims" element={
+            <ProtectedRoute allowedRoles={["Employee", "Admin"]}>
+              <MyClaims />
+            </ProtectedRoute>
+          } />
+          <Route path="/submit-claim" element={
+            <ProtectedRoute allowedRoles={["Employee"]}>
+              <SubmitClaim />
+            </ProtectedRoute>
+          } />
+          <Route path="/payroll" element={
+            <ProtectedRoute allowedRoles={["Employee", "Admin"]}>
+              <MyPayroll />
+            </ProtectedRoute>
+          } />
+          <Route path="/notifications" element={
+            <ProtectedRoute allowedRoles={["Employee", "Admin"]}>
+              <Notifications />
+            </ProtectedRoute>
+          } />
+          <Route path="/settings" element={
+            <ProtectedRoute allowedRoles={["Employee", "Admin"]}>
+              <Settings />
+            </ProtectedRoute>
+          } />
+          <Route path="/approvals" element={
+            <ProtectedRoute allowedRoles={["Employee"]}>
+              <MyApprovals />
+            </ProtectedRoute>
+          } />
+          <Route path="/reports" element={
+            <ProtectedRoute allowedRoles={["Employee"]}>
+              <MyReports />
+            </ProtectedRoute>
+          } />
+
+          {/* ===== ADMIN ROUTES ===== */}
+          <Route path="/admin-dashboard" element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/employees" element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <Employees />
+            </ProtectedRoute>
+          } />
+          <Route path="/employees/add" element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <AddEmployee />
+            </ProtectedRoute>
+          } />
+          <Route path="/teams" element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <Teams />
+            </ProtectedRoute>
+          } />
+          <Route path="/teams/add" element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <AddTeam />
+            </ProtectedRoute>
+          } />
+          <Route path="/shifts" element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <Shifts />
+            </ProtectedRoute>
+          } />
+          <Route path="/rotation-cycles" element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <RotationCycles />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin-rosters" element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <AdminRosters />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin-claims" element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <AdminClaims />
+            </ProtectedRoute>
+          } />
+          <Route path="/payroll-admin" element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <AdminPayroll />
+            </ProtectedRoute>
+          } />
+          <Route path="/payroll-admin/generate" element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <GeneratePayroll />
+            </ProtectedRoute>
+          } />
+          <Route path="/compliance" element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <Compliance />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin-reports" element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <AdminReports />
+            </ProtectedRoute>
+          } />
+          <Route path="/holidays" element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <Holidays />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin-settings" element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <AdminSettings />
+            </ProtectedRoute>
+          } />
+
+          {/* ===== 404 ===== */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+
+        </Routes>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 }
 

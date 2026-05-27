@@ -1,83 +1,342 @@
+import { useState } from "react";
 import Layout from "../components/Layout";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { rosterApi } from "../api/rosterApi";
+import { rotationApi } from "../api/rotationApi";
+import { shiftApi } from "../api/shiftApi";
+import { teamApi } from "../api/teamApi";
+import { QUERY_KEYS } from "../utils/queryKeys";
+import { getTodayStr, getWeekDates, formatRangeLabel,
+  formatHeader, getShiftCell, buildTeamRosterMap,
+} from "../utils/helpers";
 
-const rosterRows = [
-  ["Musiwa Khavhalani", "Day", "Night", "Grave", "Day", "Off", "Night"],
-  ["Lesego Aphane", "Night", "Day", "Day", "Night", "Night", "Day"],
-  ["Mpho Nemanmbula", "Grave", "Day", "Day", "Night", "Night", "Grave"],
-  ["Dimpho Makhatla", "Day", "Off", "Day", "Night", "Grave", "Day"],
-  ["Bashir", "Night", "Day", "Off", "Day", "Day", "Night"],
-];
+const todayStr = getTodayStr();
 
+function GenerateModal({ onClose, onSuccess }) {
+  const [form, setForm] = useState({
+    rotation_ids: [], start_date: "", end_date: "", default_shift_id: "",
+  });
+  const [error, setError] = useState("");
+
+  const { data: rotations } = useQuery({
+    queryKey: QUERY_KEYS.ROTATIONS,
+    queryFn: rotationApi.getAll,
+    select: (d) => d.data,
+  });
+
+  const { data: shifts } = useQuery({
+    queryKey: QUERY_KEYS.SHIFTS,
+    queryFn: shiftApi.getAll,
+    select: (d) => d.data,
+  });
+
+  const generateRoster = useMutation({
+    mutationFn: rosterApi.generate,
+    onSuccess: (data) => onSuccess(data),
+    onError: (err) => setError(err.message),
+  });
+
+  const toggleRotation = (id) =>
+    setForm((f) => ({
+      ...f,
+      rotation_ids: f.rotation_ids.includes(id)
+        ? f.rotation_ids.filter((r) => r !== id)
+        : [...f.rotation_ids, id],
+    }));
+
+  const handleGenerate = (e) => {
+    e.preventDefault();
+    setError("");
+    if (!form.rotation_ids.length) { setError("Select at least one rotation cycle."); return; }
+    if (!form.start_date || !form.end_date) { setError("Start and end date are required."); return; }
+    if (!form.default_shift_id) { setError("Default shift is required."); return; }
+    generateRoster.mutate({
+      ...form,
+      rotation_ids: form.rotation_ids.map(Number),
+      default_shift_id: Number(form.default_shift_id),
+    });
+  };
+
+  const selectStyle = {
+    width: "100%", padding: "9px 12px", border: "1px solid #d0d5dd",
+    borderRadius: 8, fontSize: 13, outline: "none",
+  };
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)",
+      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+    }}>
+      <div style={{
+        background: "white", borderRadius: 16, padding: 28,
+        width: 480, maxHeight: "90vh", overflowY: "auto",
+        boxShadow: "0 10px 40px rgba(0,95,180,0.2)",
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
+          <h3 style={{ margin: 0, color: "#005bbb" }}>Generate Roster</h3>
+          <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#667085" }}>✕</button>
+        </div>
+
+        {error && (
+          <div style={{ background: "#fee4e2", border: "1px solid #fecaca", color: "#b42318", padding: "10px 14px", borderRadius: 8, marginBottom: 16, fontSize: 13 }}>
+            ✕ {error}
+          </div>
+        )}
+
+        <form onSubmit={handleGenerate} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+          {/* Rotation Cycles */}
+          <div>
+            <label style={{ fontSize: 13, fontWeight: 700, color: "#344054", display: "block", marginBottom: 8 }}>
+              Rotation Cycles *
+            </label>
+            <div style={{ border: "1px solid #e6edf5", borderRadius: 8, padding: 10, maxHeight: 160, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
+              {rotations?.map((r) => (
+                <label key={r.rotation_id} style={{
+                  display: "flex", alignItems: "center", gap: 8, padding: "6px 8px",
+                  borderRadius: 6, cursor: "pointer",
+                  background: form.rotation_ids.includes(r.rotation_id) ? "#eaf4ff" : "transparent",
+                  border: `1px solid ${form.rotation_ids.includes(r.rotation_id) ? "#006fd6" : "transparent"}`,
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={form.rotation_ids.includes(r.rotation_id)}
+                    onChange={() => toggleRotation(r.rotation_id)}
+                    style={{ accentColor: "#006fd6" }}
+                  />
+                  <span style={{ fontSize: 13, color: "#344054" }}>{r.cycle_name}</span>
+                  {r.is_active && (
+                    <span style={{ marginLeft: "auto", fontSize: 11, background: "#e8f8ef", color: "#157347", padding: "2px 8px", borderRadius: 999, fontWeight: 700 }}>
+                      Active
+                    </span>
+                  )}
+                </label>
+              ))}
+              {!rotations?.length && (
+                <p style={{ color: "#667085", fontSize: 13, margin: 0 }}>No rotation cycles found.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Date Range */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            {[
+              { label: "Start Date *", key: "start_date", min: undefined },
+              { label: "End Date *", key: "end_date", min: form.start_date },
+            ].map(({ label, key, min }) => (
+              <div key={key}>
+                <label style={{ fontSize: 13, fontWeight: 700, color: "#344054", display: "block", marginBottom: 6 }}>{label}</label>
+                <input
+                  type="date" value={form[key]} min={min}
+                  onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                  style={selectStyle} required
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Default Shift */}
+          <div>
+            <label style={{ fontSize: 13, fontWeight: 700, color: "#344054", display: "block", marginBottom: 6 }}>
+              Default Shift *
+            </label>
+            <select
+              value={form.default_shift_id}
+              onChange={(e) => setForm({ ...form, default_shift_id: e.target.value })}
+              style={selectStyle} required
+            >
+              <option value="">Select shift</option>
+              {shifts?.map((s) => (
+                <option key={s.shift_id} value={s.shift_id}>{s.shift_name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 4 }}>
+            <button type="button" onClick={onClose}
+              style={{ padding: "10px 18px", border: "1px solid #d0d5dd", borderRadius: 8, background: "white", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>
+              Cancel
+            </button>
+            <button type="submit" disabled={generateRoster.isPending}
+              style={{ padding: "10px 18px", background: "#006fd6", color: "white", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: 13 }}>
+              {generateRoster.isPending ? "Generating..." : "Generate Roster"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ===== Main Component =====
 function AdminRosters() {
+  const qc = useQueryClient();
+  const [offset, setOffset] = useState(0);
+  const [teamFilter, setTeamFilter] = useState("");
+  const [showGenModal, setShowGenModal] = useState(false);
+  const [genResult, setGenResult] = useState(null);
+
+  const weekDates = getWeekDates(offset);
+  const range = { start_date: weekDates[0], end_date: weekDates[6] };
+
+  const { data: rosterData, isLoading } = useQuery({
+    queryKey: QUERY_KEYS.ROSTERS({ ...range, ...(teamFilter ? { team_id: teamFilter } : {}) }),
+    queryFn: () => rosterApi.getAll({ ...range, ...(teamFilter ? { team_id: teamFilter } : {}) }),
+    select: (d) => d.data,
+  });
+
+  const { data: teams } = useQuery({
+    queryKey: QUERY_KEYS.TEAMS,
+    queryFn: teamApi.getAll,
+    select: (d) => d.data,
+  });
+
+  // ===== Derived =====
+  const teamRosterMap = buildTeamRosterMap(rosterData);
+  const teamNames = Object.keys(teamRosterMap).sort();
+
+  const allEntries = rosterData?.roster
+    ? Object.values(rosterData.roster).flat()
+    : [];
+
+  const stats = [
+    { label: `${allEntries.filter((r) => r.status === "Scheduled").length} Scheduled`, bg: "#eaf4ff", color: "#006fd6" },
+    { label: `${allEntries.filter((r) => r.status === "Off").length} Off`, bg: "#f2f4f7", color: "#667085" },
+    // { label: `${allEntries.filter((r) => r.status === "Holiday").length} Holiday`, bg: "#f1eaff", color: "#7a3aed" },
+  ];
+
+  const handleGenSuccess = (data) => {
+    setGenResult(data.data);
+    setShowGenModal(false);
+    qc.invalidateQueries({ queryKey: ["rosters"] });
+  };
+
   return (
     <Layout>
       <section className="content">
         <div className="breadcrumb">Dashboard &gt; Rosters</div>
 
+        <div className="page-title-row">
+          <div>
+            <h2>Rosters</h2>
+            <p className="subtitle">Weekly shift schedule by team.</p>
+          </div>
+          <button className="primary-btn" onClick={() => { setShowGenModal(true); setGenResult(null); }}>
+            Generate Roster
+          </button>
+        </div>
+
+        {/* ===== Generation Result ===== */}
+        {genResult && (
+          <div style={{ background: "#e8f8ef", border: "1px solid #bbf7d0", color: "#157347", padding: "12px 16px", borderRadius: 8, marginBottom: 16, fontSize: 13 }}>
+            ✓ Roster generated — <strong>{genResult.total_inserted}</strong> entries inserted,{" "}
+            <strong>{genResult.total_skipped}</strong> skipped,{" "}
+            <strong>{genResult.holiday_entries}</strong> holiday entries.
+            {genResult.warning && <span style={{ marginLeft: 8, color: "#b54708" }}>⚠️ {genResult.warning}</span>}
+          </div>
+        )}
+
+        {/* ===== Toolbar ===== */}
         <div className="roster-toolbar">
-          <button className="arrow-btn">‹</button>
+          <button className="arrow-btn" onClick={() => setOffset((o) => o - 1)}>‹</button>
 
-          <div className="date-picker">
-            19 May 2025 - 25 May 2025
-            <span>⌄</span>
+          <div className="date-picker" style={{ cursor: "default" }}>
+            {formatRangeLabel(weekDates[0], weekDates[6])}
           </div>
 
-          <button className="filter-btn">All Teams ⌄</button>
-          <button className="view-btn">Week ⌄</button>
+          <button className="arrow-btn" onClick={() => setOffset((o) => o + 1)}>›</button>
+
+          <button className="filter-btn" onClick={() => setOffset(0)} style={{ marginLeft: 4 }}>
+            Today
+          </button>
+
+          <select
+            value={teamFilter}
+            onChange={(e) => setTeamFilter(e.target.value)}
+            className="filter-btn"
+            style={{ cursor: "pointer" }}
+          >
+            <option value="">All Teams</option>
+            {teams?.map((t) => (
+              <option key={t.team_id} value={t.team_id}>{t.team_name}</option>
+            ))}
+          </select>
         </div>
 
+        <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+          {stats.map(({ label, bg, color }) => (
+            <span key={label} style={{ background: bg, color, padding: "5px 14px", borderRadius: 999, fontSize: 12, fontWeight: 700 }}>
+              {label}
+            </span>
+          ))}
+        </div>
+
+        {/* ===== Table ===== */}
         <div className="roster-table-card">
-          <table className="roster-table admin-roster-table">
-            <thead>
-              <tr>
-                <th>Employee</th>
-                <th>Mon<br />19 May</th>
-                <th>Tue<br />20 May</th>
-                <th>Wed<br />21 May</th>
-                <th>Thu<br />22 May</th>
-                <th>Fri<br />23 May</th>
-                <th>Sun<br />25 May</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {rosterRows.map((row, index) => (
-                <tr key={index}>
-                  <td><strong>{row[0]}</strong></td>
-
-                  {row.slice(1).map((shift, shiftIndex) => (
-                    <td key={shiftIndex}>
-                      <span
-                        className={
-                          shift === "Day"
-                            ? "shift-day"
-                            : shift === "Night"
-                            ? "shift-night"
-                            : shift === "Grave"
-                            ? "shift-grave"
-                            : "shift-off"
-                        }
-                      >
-                        {shift}
-                      </span>
-                    </td>
-                  ))}
+          {isLoading ? (
+            <p style={{ color: "#667085", fontSize: 13, padding: "20px 0" }}>Loading roster...</p>
+          ) : teamNames.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px 0" }}>
+              <p style={{ color: "#667085", fontSize: 14 }}>No roster generated for this period.</p>
+              <button className="primary-btn" onClick={() => setShowGenModal(true)} style={{ marginTop: 12 }}>
+                Generate Now
+              </button>
+            </div>
+          ) : (
+            <table className="roster-table admin-roster-table">
+              <thead>
+                <tr>
+                  <th>Team</th>
+                  {weekDates.map((date) => {
+                    const { day, date: dateLabel } = formatHeader(date);
+                    const isTodayCol = date === todayStr;
+                    return (
+                      <th key={date} style={isTodayCol ? { background: "#006fd6", color: "white" } : {}}>
+                        {day}<br />{dateLabel}
+                      </th>
+                    );
+                  })}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {teamNames.map((teamName) => (
+                  <tr key={teamName}>
+                    <td><strong style={{ color: "#344054" }}>{teamName}</strong></td>
+                    {weekDates.map((date) => {
+                      const entry = teamRosterMap[teamName]?.[date];
+                      const { label, style } = getShiftCell(entry);
+                      return (
+                        <td key={date} style={date === todayStr ? { background: "#f0f7ff" } : {}}>
+                          <span style={style}>{label}</span>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
 
-          <div className="shift-legend">
-            <span><b className="legend-day"></b> Day Shift</span>
-            <span><b className="legend-night"></b> Night Shift</span>
-            <span><b className="legend-grave"></b> Grave Shift</span>
-            <span><b className="legend-off"></b> Off Day</span>
+          <div className="shift-legend" style={{ marginTop: 16 }}>
+            <span><b className="legend-early" /> Day (06–14) </span>
+            <span><b className="legend-night" /> Night (14–22) </span>
+            <span><b className="legend-grave" /> Grave (22–06) </span>
+            <span><b className="legend-off" /> Day Off </span>
+            <span>
+              <b style={{ display: "inline-block", width: 10, height: 10, borderRadius: "50%", background: "#7a3aed" }} />
+              {" "}Holiday
+            </span>
           </div>
 
-          <p className="roster-note">
-            Note: Roster is subject to change. Please check regularly.
-          </p>
+          <p className="roster-note">Note: Roster is subject to change. Please check regularly.</p>
         </div>
+
+        {showGenModal && (
+          <GenerateModal
+            onClose={() => setShowGenModal(false)}
+            onSuccess={handleGenSuccess}
+          />
+        )}
       </section>
     </Layout>
   );
