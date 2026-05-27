@@ -1,10 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Poppins:wght@400;600;700&display=swap');
+@import "tailwindcss";
+
 * {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
+  font-family: 'Open Sans', sans-serif;
   background: linear-gradient(135deg, #eaf5ff, #ffffff);
 }
 
@@ -1529,20 +1532,20 @@ textarea {
   border-radius: 50%;
 }
 
-.legend-day {
-  background: #006fd6;
+.legend-early {
+  background: #FFD39B;
 }
 
 .legend-night {
-  background: #16a34a;
+  background: #ADD8E6;
 }
 
 .legend-grave {
-  background: #7a3aed;
+  background: #FFA500;
 }
 
 .legend-off {
-  background: #98a2b3;
+  background: #FF0000;
 }
 
 

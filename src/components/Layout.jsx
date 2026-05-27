@@ -1,161 +1,90 @@
-import { NavLink, useNavigate } from "react-router-dom";
-import {
-  LayoutDashboard,
-  User,
-  CalendarDays,
-  FileText,
-  CheckCircle,
-  Wallet,
-  BarChart3,
-  Bell,
-  Settings as SettingsIcon,
-  LogOut,
-  Users,
-  Clock,
-  Repeat,
-  ShieldAlert,
-  CalendarCheck,
-} from "lucide-react";
+import { NavLink } from "react-router-dom";
+import { useAuthStore } from "../store/authStore";
 
 function Layout({ children }) {
-  const navigate = useNavigate();
-  const role = localStorage.getItem("role") || "employee";
+  const { user } = useAuthStore();
+  const role = user?.user?.user?.role || "Employee";
+
+const getInitials = (name) => {
+  if (!name) return "??";
+  return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+};
 
   const handleLogout = () => {
-    localStorage.removeItem("role");
-    navigate("/");
+    useAuthStore.getState().clearAuth();
+    window.location.href = "/";
   };
 
   return (
     <div className="app-shell">
       <aside className="app-sidebar">
+        <div className="brand">
+          <div className="brand-icon">🛡️</div>
+          <div>
+            <h3>NOC Roster</h3>
+            <p>{role === "Admin" ? "Management System" : "Employee Portal"}</p>
+          </div>
+        </div>
+
         <nav className="side-menu">
-          {role === "admin" ? (
+          {role === "Admin" ? (
             <>
-              <NavLink to="/admin-dashboard">
-                <LayoutDashboard size={16} /> Admin Dashboard
-              </NavLink>
-
-              <NavLink to="/employees">
-                <Users size={16} /> Employees
-              </NavLink>
-
-              <NavLink to="/teams">
-                <User size={16} /> Teams
-              </NavLink>
-
-              <NavLink to="/shifts">
-                <Clock size={16} /> Shifts
-              </NavLink>
-
-              <NavLink to="/rotation-cycles">
-                <Repeat size={16} /> Rotation Cycles
-              </NavLink>
-
-              <NavLink to="/admin-rosters">
-                <CalendarDays size={16} /> Rosters
-              </NavLink>
-
-              <NavLink to="/admin-claims">
-                <FileText size={16} /> Claims
-              </NavLink>
-
-              
-
-              <NavLink to="/payroll-admin">
-                <Wallet size={16} /> Payroll
-              </NavLink>
-
-              <NavLink to="/compliance">
-                <ShieldAlert size={16} /> Compliance/Violations
-              </NavLink>
-
-              <NavLink to="/holidays">
-                <CalendarCheck size={16} /> Holidays
-              </NavLink>
-
-              <NavLink to="/admin-reports">
-  <BarChart3 size={16} /> Reports
-</NavLink>
-
-              <NavLink to="/settings">
-                <SettingsIcon size={16} /> Settings
-              </NavLink>
+              <NavLink to="/admin-dashboard">🏠 Admin Dashboard</NavLink>
+              <NavLink to="/employees">👥 Employees</NavLink>
+              <NavLink to="/teams">🏢 Teams</NavLink>
+              <NavLink to="/shifts">🕐 Shifts</NavLink>
+              <NavLink to="/rotation-cycles">🔄 Rotation Cycles</NavLink>
+              <NavLink to="/admin-rosters">📅 Rosters</NavLink>
+              <NavLink to="/admin-claims">📋 Claims</NavLink>
+              <NavLink to="/payroll-admin">💰 Payroll</NavLink>
+              <NavLink to="/compliance">🛡️ Compliance</NavLink>
+              <NavLink to="/holidays">🌟 Holidays</NavLink>
+              <NavLink to="/admin-reports">📊 Reports</NavLink>
+              <NavLink to="/admin-settings">⚙️ Settings</NavLink>
             </>
           ) : (
             <>
-              <NavLink to="/dashboard">
-                <LayoutDashboard size={16} /> Dashboard
-              </NavLink>
-
-              <NavLink to="/profile">
-                <User size={16} /> My Profile
-              </NavLink>
-
-              <NavLink to="/roster">
-                <CalendarDays size={16} /> My Roster
-              </NavLink>
-
-              <NavLink to="/claims">
-                <FileText size={16} /> My Claims
-              </NavLink>
-
-              <NavLink to="/approvals">
-                <CheckCircle size={16} /> My Approvals
-              </NavLink>
-
-              <NavLink to="/payroll">
-                <Wallet size={16} /> My Payroll
-              </NavLink>
-
-              <NavLink to="/reports">
-                <BarChart3 size={16} /> My Reports
-              </NavLink>
-
-              <NavLink to="/notifications">
-                <Bell size={16} /> Notifications
-              </NavLink>
-
-              
-
-              <NavLink to="/admin-settings">
-  <SettingsIcon size={16} /> Settings
-</NavLink>
+              <NavLink to="/dashboard">🏠 Dashboard</NavLink>
+              <NavLink to="/profile">👤 My Profile</NavLink>
+              <NavLink to="/roster">📅 My Roster</NavLink>
+              <NavLink to="/claims">📋 My Claims</NavLink>
+              <NavLink to="/approvals">✅ My Approvals</NavLink>
+              <NavLink to="/payroll">💰 My Payroll</NavLink>
+              <NavLink to="/reports">📊 My Reports</NavLink>
+              <NavLink to="/notifications">🔔 Notifications</NavLink>
+              <NavLink to="/settings">⚙️ Settings</NavLink>
             </>
           )}
 
           <button className="logout-btn" onClick={handleLogout}>
-            <LogOut size={16} /> Logout
+            🚪 Logout
           </button>
         </nav>
       </aside>
 
       <main className="app-main">
-       <header className="app-topbar compact-topbar">
-  <div className="top-brand">
-    <div className="small-logo">🛡️</div>
-    <div>
-      <h4>NOC ROSTER & CLAIMS</h4>
-      <span>{role === "admin" ? "MANAGEMENT SYSTEM" : "EMPLOYEE PORTAL"}</span>
-    </div>
-  </div>
+        <header className="app-topbar">
+          <div className="top-brand">
+            <div className="small-logo">🛡️</div>
+            <div>
+              <h4>NOC ROSTER & CLAIMS</h4>
+              <span>{role === "Admin" ? "MANAGEMENT SYSTEM" : "EMPLOYEE PORTAL"}</span>
+            </div>
+          </div>
 
-  <div className="top-search">
-    <input placeholder="Search employees, shifts, claims, rosters..." />
-  </div>
+          <div className="top-search">
+            <input placeholder="Search employees, shifts, claims, rosters..." />
+          </div>
 
-  <div className="top-actions">
-    <span className="top-icon">🔍</span>
-    <span className="top-icon">✉️</span>
-    <div className="bell">🔔<span>3</span></div>
-    <div className="avatar">{role === "admin" ? "A" : "LA"}</div>
-
-    <div className="user-info">
-      <strong>{role === "admin" ? "Ashura" : "Lesego Aphane"}</strong>
-      <small>{role === "admin" ? "Administrator" : "Junior Developer"}</small>
-    </div>
-  </div>
-</header>
+          <div className="top-actions">
+            <div className="bell">🔔<span>0</span></div>
+            <div className="avatar">{getInitials(user?.user?.name)}</div>
+            <div className="user-info">
+              <strong>{user?.user?.name}</strong>
+              <small style={{ textTransform: "capitalize" }}>{user?.user?.position}</small>
+            </div>
+          </div>
+        </header>
 
         {children}
       </main>
