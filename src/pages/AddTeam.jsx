@@ -1,47 +1,50 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import Layout from "../components/Layout";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { teamApi } from "../api/teamApi";
-import { employeeApi } from "../api/employeeApi";
 import { QUERY_KEYS } from "../utils/queryKeys";
 
-const inputStyle = {
-  width: "100%", padding: "11px", border: "1px solid #d0d5dd",
-  borderRadius: 8, outline: "none", fontSize: 13,
+// ===== Shared input style =====
+const inp = {
+  width: "100%", padding: "9px 12px",
+  border: "1px solid #d0d5dd", borderRadius: 8,
+  fontSize: 13, outline: "none",
   fontFamily: "inherit", boxSizing: "border-box",
 };
+const onFocus = (e) => (e.target.style.borderColor = "#006fd6");
+const onBlur = (e) => (e.target.style.borderColor = "#d0d5dd");
 
-function AddTeam() {
-  const navigate = useNavigate();
+// ===== Reusable sub-components =====
+const Field = ({ label, required, children }) => (
+  <div>
+    <label style={{ fontSize: 12, color: "#667085", display: "block", marginBottom: 4 }}>
+      {label}{required && <span style={{ color: "#b42318" }}> *</span>}
+    </label>
+    {children}
+  </div>
+);
+
+const SectionTitle = ({ title, sub }) => (
+  <div style={{ borderBottom: "1px solid #e6edf5", paddingBottom: 10, marginBottom: 16 }}>
+    <h4 style={{ margin: 0, color: "#005bbb", fontSize: 14 }}>{title}</h4>
+    {sub && <p style={{ margin: "4px 0 0", fontSize: 12, color: "#667085" }}>{sub}</p>}
+  </div>
+);
+
+// ===== Modal Component =====
+function AddTeam({ team, employees, onClose, onSuccess }) {
+  const isEdit = !!team;
   const qc = useQueryClient();
 
   const [form, setForm] = useState({
-    team_name: "", description: "", employee_ids: [],
+    team_name: team?.team_name || "",
+    description: team?.description || "",
+    employee_ids: team?.employees?.map((e) => e.employee_id) || [],
   });
+
   const [error, setError] = useState("");
+  const [memberSearch, setMemberSearch] = useState("");
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
-
-  // ===== Fetch employees to assign =====
-  const { data: employees } = useQuery({
-    queryKey: QUERY_KEYS.EMPLOYEES,
-    queryFn: employeeApi.getAll,
-    select: (d) => d.data?.filter((e) => e.status === "Active"),
-  });
-
-  // ===== Create team =====
-  const createTeam = useMutation({
-    mutationFn: teamApi.create,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAMS });
-      navigate("/teams", { state: { success: "Team created successfully." } });
-    },
-    onError: (err) => {
-      setError(err.message);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    },
-  });
 
   const toggleEmployee = (id) => {
     setForm((f) => ({
@@ -52,87 +55,153 @@ function AddTeam() {
     }));
   };
 
+  const createTeam = useMutation({
+    mutationFn: teamApi.create,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAMS });
+      onSuccess("Team created successfully.");
+    },
+    onError: (err) => setError(err.message),
+  });
+
+  const updateTeam = useMutation({
+    mutationFn: (data) => teamApi.update(team.team_id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: QUERY_KEYS.TEAMS });
+      onSuccess("Team updated successfully.");
+    },
+    onError: (err) => setError(err.message),
+  });
+
   const handleSubmit = (e) => {
     e.preventDefault();
     setError("");
     if (!form.team_name.trim()) { setError("Team name is required."); return; }
-    createTeam.mutate(form);
+    isEdit ? updateTeam.mutate(form) : createTeam.mutate(form);
   };
 
+  const isPending = createTeam.isPending || updateTeam.isPending;
+
+  // Active employees only, filter by search
+  const activeEmployees = (employees || [])
+    .filter((e) => e.status === "Active")
+    .filter((e) =>
+      !memberSearch ||
+      e.name.toLowerCase().includes(memberSearch.toLowerCase()) ||
+      e.team?.team_name?.toLowerCase().includes(memberSearch.toLowerCase())
+    );
+
+  const selectedCount = form.employee_ids.length;
+
   return (
-    <Layout>
-      <section className="content">
-        <div className="breadcrumb">
-          Dashboard &gt;{" "}
-          <a href="/teams" style={{ color: "#006fd6" }}>Teams</a> &gt; Add Team
-        </div>
+    <div style={{
+      position: "fixed", inset: 0,
+      background: "rgba(0,0,0,0.45)",
+      display: "flex", alignItems: "center",
+      justifyContent: "center", zIndex: 1000, padding: 16,
+    }}>
+      <div style={{
+        background: "white", borderRadius: 16,
+        width: "100%", maxWidth: 580,
+        maxHeight: "92vh", overflowY: "auto",
+        boxShadow: "0 10px 40px rgba(0,95,180,0.2)",
+      }}>
 
-        <div className="page-title-row">
+        {/* ===== Sticky Header ===== */}
+        <div style={{
+          display: "flex", justifyContent: "space-between",
+          alignItems: "center", padding: "20px 28px 16px",
+          borderBottom: "1px solid #e6edf5",
+          position: "sticky", top: 0,
+          background: "white", zIndex: 10,
+        }}>
           <div>
-            <h2>Add Team</h2>
-            <p className="subtitle">Create a new team and assign members.</p>
+            <h3 style={{ margin: 0, color: "#005bbb", fontSize: 17 }}>
+              {isEdit ? "Edit Team" : "Add Team"}
+            </h3>
+            <p style={{ margin: "3px 0 0", fontSize: 12, color: "#667085" }}>
+              {isEdit
+                ? "Update team details and members."
+                : "Create a new team and assign members."}
+            </p>
           </div>
+          <button onClick={onClose} style={{
+            background: "none", border: "none",
+            fontSize: 20, cursor: "pointer", color: "#667085",
+          }}>✕</button>
         </div>
 
-        {error && (
-          <div style={{
-            background: "#fee4e2", border: "1px solid #fecaca",
-            color: "#b42318", padding: "12px 16px",
-            borderRadius: 8, marginBottom: 18, fontSize: 13,
-          }}>
-            ✕ {error}
-          </div>
-        )}
+        {/* ===== Body ===== */}
+        <div style={{ padding: "24px 28px" }}>
 
-        <form onSubmit={handleSubmit}>
-          <div className="claim-form-card" style={{ marginBottom: 18 }}>
-            <h3>Team Details</h3>
+          {error && (
+            <div style={{
+              background: "#fee4e2", border: "1px solid #fecaca",
+              color: "#b42318", padding: "10px 14px",
+              borderRadius: 8, marginBottom: 20, fontSize: 13,
+            }}>
+              ✕ {error}
+            </div>
+          )}
 
-            {/* Team Name */}
-            <div className="form-group">
-              <label>Team Name <span style={{ color: "#b42318" }}>*</span></label>
+          <form onSubmit={handleSubmit}>
+
+            {/* ===== Team Details ===== */}
+            <SectionTitle title="Team Details" />
+            <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 24 }}>
+              <Field label="Team Name" required>
+                <input style={inp} placeholder="e.g. Network Ops"
+                  value={form.team_name} onChange={set("team_name")}
+                  onFocus={onFocus} onBlur={onBlur} />
+              </Field>
+              <Field label="Description">
+                <textarea
+                  style={{ ...inp, minHeight: 80, resize: "vertical" }}
+                  placeholder="Describe this team's responsibilities..."
+                  value={form.description} onChange={set("description")}
+                />
+              </Field>
+            </div>
+
+            {/* ===== Assign Members ===== */}
+            <SectionTitle
+              title="Assign Members"
+              sub="Select active employees to add to this team. You can update this later."
+            />
+
+            {/* Member search */}
+            <div style={{ marginBottom: 10 }}>
               <input
-                style={inputStyle}
-                placeholder="e.g. Network Ops"
-                value={form.team_name}
-                onChange={set("team_name")}
-                onFocus={(e) => (e.target.style.borderColor = "#006fd6")}
-                onBlur={(e) => (e.target.style.borderColor = "#d0d5dd")}
+                style={{ ...inp, padding: "8px 12px" }}
+                placeholder="Search employees..."
+                value={memberSearch}
+                onChange={(e) => setMemberSearch(e.target.value)}
+                onFocus={onFocus} onBlur={onBlur}
               />
             </div>
 
-            {/* Description */}
-            <div className="form-group">
-              <label>Description</label>
-              <textarea
-                style={{ ...inputStyle, minHeight: 90, resize: "vertical" }}
-                placeholder="Enter team description..."
-                value={form.description}
-                onChange={set("description")}
-              />
-            </div>
-          </div>
-
-          {/* ===== Assign Members ===== */}
-          <div className="claim-form-card" style={{ marginBottom: 18 }}>
-            <h3>Assign Members</h3>
-            <p style={{ color: "#667085", fontSize: 13, marginTop: -8, marginBottom: 16 }}>
-              Select employees to add to this team. You can also assign them later.
-            </p>
-
-            {!employees?.length ? (
-              <p style={{ color: "#667085", fontSize: 13 }}>No active employees available.</p>
+            {/* Member checkboxes */}
+            {!activeEmployees.length ? (
+              <p style={{ color: "#667085", fontSize: 13, padding: "12px 0" }}>
+                {memberSearch ? "No employees match your search." : "No active employees available."}
+              </p>
             ) : (
               <div style={{
-                display: "grid", gridTemplateColumns: "repeat(2, 1fr)",
-                gap: 8, maxHeight: 260, overflowY: "auto",
+                display: "grid", gridTemplateColumns: "1fr 1fr",
+                gap: 8, maxHeight: 240, overflowY: "auto",
+                border: "1px solid #e6edf5", borderRadius: 10,
+                padding: 10, marginBottom: 12,
               }}>
-                {employees.map((emp) => {
+                {activeEmployees.map((emp) => {
                   const selected = form.employee_ids.includes(emp.employee_id);
+                  const currentTeam = emp.team?.team_name;
+                  const willMove = currentTeam && currentTeam !== team?.team_name;
+
                   return (
                     <label key={emp.employee_id} style={{
-                      display: "flex", alignItems: "center", gap: 10,
-                      padding: "10px 12px", borderRadius: 8, cursor: "pointer",
+                      display: "flex", alignItems: "flex-start",
+                      gap: 10, padding: "10px 12px",
+                      borderRadius: 8, cursor: "pointer",
                       border: `1px solid ${selected ? "#006fd6" : "#e6edf5"}`,
                       background: selected ? "#eaf4ff" : "white",
                       transition: "all 0.15s",
@@ -141,14 +210,22 @@ function AddTeam() {
                         type="checkbox"
                         checked={selected}
                         onChange={() => toggleEmployee(emp.employee_id)}
-                        style={{ accentColor: "#006fd6", width: 15, height: 15 }}
+                        style={{ accentColor: "#006fd6", marginTop: 2 }}
                       />
-                      <div style={{ overflow: "hidden" }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "#1d2939", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
+                      <div style={{ overflow: "hidden", flex: 1 }}>
+                        <div style={{
+                          fontSize: 13, fontWeight: 700,
+                          color: "#1d2939", whiteSpace: "nowrap",
+                          textOverflow: "ellipsis", overflow: "hidden",
+                        }}>
                           {emp.name}
                         </div>
                         <div style={{ fontSize: 11, color: "#667085" }}>
-                          {emp.team?.team_name ? `Currently: ${emp.team.team_name}` : "No team"}
+                          {currentTeam
+                            ? willMove
+                              ? <span style={{ color: "#b54708" }}>⚠ From: {currentTeam}</span>
+                              : `Team: ${currentTeam}`
+                            : "No team"}
                         </div>
                       </div>
                     </label>
@@ -157,32 +234,41 @@ function AddTeam() {
               </div>
             )}
 
-            {form.employee_ids.length > 0 && (
-              <p style={{ marginTop: 12, fontSize: 13, color: "#006fd6", fontWeight: 700 }}>
-                {form.employee_ids.length} member{form.employee_ids.length !== 1 ? "s" : ""} selected
-              </p>
-            )}
-          </div>
+            {/* Selected count + warning */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <span style={{ fontSize: 13, color: "#006fd6", fontWeight: 700 }}>
+                {selectedCount > 0
+                  ? `${selectedCount} member${selectedCount !== 1 ? "s" : ""} selected`
+                  : "No members selected"}
+              </span>
+              {form.employee_ids.some((id) => {
+                const emp = (employees || []).find((e) => e.employee_id === id);
+                return emp?.team?.team_name && emp.team.team_name !== team?.team_name;
+              }) && (
+                <span style={{ fontSize: 11, color: "#b54708" }}>
+                  ⚠ Some employees will be moved from their current team
+                </span>
+              )}
+            </div>
 
-          <div className="form-actions">
-            <button
-              type="button"
-              className="cancel-btn"
-              onClick={() => navigate("/teams")}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="primary-btn"
-              disabled={createTeam.isPending}
-            >
-              {createTeam.isPending ? "Creating..." : "Save Team"}
-            </button>
-          </div>
-        </form>
-      </section>
-    </Layout>
+            {/* ===== Actions ===== */}
+            <div style={{
+              display: "flex", justifyContent: "flex-end",
+              gap: 10, marginTop: 24, paddingTop: 16,
+              borderTop: "1px solid #e6edf5",
+            }}>
+              <button type="button" onClick={onClose} className="cancel-btn">
+                Cancel
+              </button>
+              <button type="submit" className="primary-btn" disabled={isPending}>
+                {isPending ? "Saving..." : isEdit ? "Save Changes" : "Create Team"}
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </div>
   );
 }
 

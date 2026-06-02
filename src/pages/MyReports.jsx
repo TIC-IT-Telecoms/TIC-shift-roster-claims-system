@@ -383,10 +383,11 @@ function MyReports() {
               <p>{report.description}</p>
 
               {/* Count badge */}
-              <p style={{
+              <div className="flex items-start gap-2">
+                <p className="text-center" style={{
                 fontSize: 12, fontWeight: 700, color: "#006fd6",
-                background: "#eaf4ff", padding: "4px 10px",
-                borderRadius: 999, display: "inline-block", marginBottom: 14,
+                background: "#eaf4ff", padding: "10px",
+                borderRadius: 999, display: "inline-block"
               }}>
                 {report.loading ? "Loading..." : report.count}
               </p>
@@ -404,6 +405,7 @@ function MyReports() {
               >
                 {exporting === report.key ? "Exporting..." : report.btnLabel}
               </button>
+              </div>
             </div>
           ))}
         </div>

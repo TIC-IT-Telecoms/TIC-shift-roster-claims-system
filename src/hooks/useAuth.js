@@ -10,8 +10,8 @@ export const useLogin = () => {
   return useMutation({
     mutationFn: authApi.login,
     onSuccess: (data) => {
-      if (data?.data?.success === false || !data?.data?.employee) {
-        throw new Error(data?.data?.message || "Invalid username or password");
+      if (data?.success === false || !data?.data?.employee) {
+        throw new Error(data?.message || "Invalid username or password");
       }
       const user = data?.data?.employee;
       const role = user?.user?.role;
