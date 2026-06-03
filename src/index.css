@@ -1823,3 +1823,26 @@ textarea {
 .user-info small {
   opacity: 0.85;
 }
+
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.pagination button {
+  min-width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #d0d5dd;
+  background: white;
+  cursor: pointer;
+}
+
+.pagination button.active {
+  background: #006fd6;
+  color: white;
+  border-color: #006fd6;
+}

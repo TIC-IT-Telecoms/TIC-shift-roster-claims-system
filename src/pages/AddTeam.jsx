@@ -150,14 +150,14 @@ function AddTeam({ team, employees, onClose, onSuccess }) {
             <SectionTitle title="Team Details" />
             <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 24 }}>
               <Field label="Team Name" required>
-                <input style={inp} placeholder="e.g. Network Ops"
+                <input style={inp} placeholder="e.g. Bomb Squad"
                   value={form.team_name} onChange={set("team_name")}
                   onFocus={onFocus} onBlur={onBlur} />
               </Field>
               <Field label="Description">
                 <textarea
                   style={{ ...inp, minHeight: 80, resize: "vertical" }}
-                  placeholder="Describe this team's responsibilities..."
+                  placeholder="Team description..."
                   value={form.description} onChange={set("description")}
                 />
               </Field>

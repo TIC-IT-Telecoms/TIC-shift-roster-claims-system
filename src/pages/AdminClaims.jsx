@@ -1,10 +1,12 @@
-// src/pages/AdminClaims.jsx
 import { useState } from "react";
 import Layout from "../components/Layout";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { claimApi } from "../api/claimApi";
 import { QUERY_KEYS } from "../utils/queryKeys";
 import { formatZAR, calcClaimEarnings } from "../utils/helpers";
+import Pagination from "../components/Pagination";
+import usePagination from "../hooks/usePagination";
+import ConfirmationModal from "../components/ui/ConfirmationModal";
 
 // ===== Status badge =====
 const StatusBadge = ({ status }) => {
@@ -255,6 +257,7 @@ function AdminClaims() {
   const [rejectClaim, setRejectClaim] = useState(null);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [claimToApprove, setClaimToApprove] = useState(null);
 
   const showSuccess = (msg) => {
     setSuccessMsg(msg);
@@ -288,16 +291,20 @@ function AdminClaims() {
       );
     });
 
+  const { currentPage, setCurrentPage, totalPages,
+    paginatedData, pageSize,
+  } = usePagination(filtered, 5);
+
   // ===== Review mutation (approve or reject) =====
   const reviewClaim = useMutation({
     mutationFn: ({ id, status, notes }) =>
       claimApi.review ? claimApi.review(id, { status, notes })
         : fetch(`/api/claims/${id}/status`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ status, notes }),
-          }).then((r) => r.json()),
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ status, notes }),
+        }).then((r) => r.json()),
     onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: ["claims"] });
       setViewClaim(null);
@@ -311,8 +318,23 @@ function AdminClaims() {
   });
 
   const handleApprove = (claim) => {
-    if (!confirm(`Approve claim #${claim.claim_id} for ${claim.employee?.name}?`)) return;
-    reviewClaim.mutate({ id: claim.claim_id, status: "Approved", notes: "Claim approved." });
+    setClaimToApprove(claim);
+  };
+
+  const confirmApprove = () => {
+    setClaimToApprove(null);
+    reviewClaim.mutate(
+      {
+        id: claimToApprove.claim_id,
+        status: "Approved",
+        notes: "Claim approved.",
+      },
+      {
+        onSuccess: () => {
+          setClaimToApprove(null);
+        },
+      }
+    );
   };
 
   const handleRejectConfirm = (notes) => {
@@ -397,7 +419,7 @@ function AdminClaims() {
               </thead>
 
               <tbody>
-                {filtered.map((claim) => {
+                {paginatedData.map((claim) => {
                   const rate = Number(claim.employee?.hourly_rate || 0);
                   const { total } = calcClaimEarnings(claim, rate);
 
@@ -522,9 +544,23 @@ function AdminClaims() {
             </table>
           )}
 
-          <p className="roster-note">
-            Showing {filtered.length} of {counts[activeTab]} {activeTab.toLowerCase()} claims
-          </p>
+          <div className="flex items-center justify-between mt-4 border-t border-slate-200 pt-4">
+            <p className="roster-note">
+              Showing{" "}
+              {filtered.length
+                ? (currentPage - 1) * pageSize + 1
+                : 0}
+              -
+              {Math.min(currentPage * pageSize, filtered.length)} of{" "}
+              {filtered.length} {activeTab.toLowerCase()} claims
+            </p>
+
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          </div>
         </div>
 
         {/* ===== View Modal ===== */}
@@ -545,6 +581,18 @@ function AdminClaims() {
             onClose={() => setRejectClaim(null)}
             onConfirm={handleRejectConfirm}
             isPending={reviewClaim.isPending}
+          />
+        )}
+
+        {claimToApprove && (
+          <ConfirmationModal
+            title="Approve Claim"
+            message={`Approve claim #CLM${String(claimToApprove.claim_id).padStart(4, "0")} for ${claimToApprove.employee?.name}?`}
+            confirmText="Approve"
+            confirmColor="#16a34a"
+            isPending={reviewClaim.isPending}
+            onConfirm={confirmApprove}
+            onClose={() => setClaimToApprove(null)}
           />
         )}
 

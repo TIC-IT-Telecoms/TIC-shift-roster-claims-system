@@ -5,6 +5,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { teamApi } from "../api/teamApi";
 import { employeeApi } from "../api/employeeApi";
 import { QUERY_KEYS } from "../utils/queryKeys";
+import Pagination from "../components/Pagination";
+import usePagination from "../hooks/usePagination";
 import AddTeam from "./AddTeam";
 
 function Teams() {
@@ -78,6 +80,14 @@ function Teams() {
     t.description?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const {
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    paginatedData,
+    pageSize,
+  } = usePagination(filtered, 4);
+
   // ===== Derive team lead from employees =====
   // Team lead = first admin/supervisor in the team, fallback to first member
   const getTeamLead = (team) => {
@@ -142,7 +152,7 @@ function Teams() {
               </thead>
 
               <tbody>
-                {filtered.map((team) => (
+                {paginatedData.map((team) => (
                   <tr key={team.team_id}>
                     <td style={{ color: "#667085", fontSize: 12, fontFamily: "monospace" }}>
                       TEAM{String(team.team_id).padStart(3, "0")}
@@ -243,10 +253,23 @@ function Teams() {
               </tbody>
             </table>
           )}
+          <div className="flex items-center justify-between mt-4 border-t border-slate-200 pt-4">
+            <p className="text-sm text-slate-500">
+              Showing{" "}
+              {filtered.length
+                ? (currentPage - 1) * pageSize + 1
+                : 0}
+              -
+              {Math.min(currentPage * pageSize, filtered.length)} of{" "}
+              {filtered.length} teams
+            </p>
 
-          <p className="roster-note">
-            Showing {filtered.length} of {teams?.length || 0} teams
-          </p>
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          </div>
         </div>
 
         {/* ===== View Members Modal ===== */}

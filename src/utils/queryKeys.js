@@ -29,4 +29,6 @@ export const QUERY_KEYS = {
   CLAIM: (id) => ['claims', id],
 
   PROFILE: ['profile'],
+
+  NOTIFICATIONS: ['notifications'],
 };
