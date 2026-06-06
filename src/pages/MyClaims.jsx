@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { claimApi } from "../api/claimApi";
 import { profileApi } from "../api/profileApi";
 import { QUERY_KEYS } from "../utils/queryKeys";
@@ -11,17 +11,33 @@ import { formatDate, formatZAR, calcClaimEarnings } from "../utils/helpers";
 // ===== Status badge =====
 const StatusBadge = ({ status }) => {
   const map = {
-    Pending: "status-pending",
+    Pending:  "status-pending",
     Approved: "status-approved",
     Rejected: "status-rejected",
   };
   return <span className={map[status] || "status-pending"}>{status}</span>;
 };
 
+// ===== Detail grid cell =====
+const DetailCell = ({ label, value }) => (
+  <div style={{ background: "#f4f8fd", borderRadius: 8, padding: "10px 12px" }}>
+    <div style={{ fontSize: 11, color: "#667085", marginBottom: 3 }}>{label}</div>
+    <div style={{ fontSize: 13, fontWeight: 700, color: "#1d2939" }}>{value}</div>
+  </div>
+);
+
 // ===== View Claim Modal =====
 function ClaimModal({ claim, onClose, hourlyRate }) {
   if (!claim) return null;
-  const { normal, overtime, holiday, total } = calcClaimEarnings(claim, hourlyRate);
+
+  // Pass shift if available for accurate grave-shift holiday split
+  const { normal, overtime, holiday, total } = calcClaimEarnings(
+    claim,
+    hourlyRate,
+    claim.shift ?? null
+  );
+
+  const isRejected = claim.status === "Rejected";
 
   return (
     <div style={{
@@ -32,6 +48,7 @@ function ClaimModal({ claim, onClose, hourlyRate }) {
       <div style={{
         background: "white", borderRadius: 16,
         width: "100%", maxWidth: 480,
+        maxHeight: "92vh", overflowY: "auto",
         boxShadow: "0 10px 40px rgba(0,95,180,0.2)",
         overflow: "hidden",
       }}>
@@ -43,7 +60,7 @@ function ClaimModal({ claim, onClose, hourlyRate }) {
         }}>
           <div>
             <h3 style={{ margin: 0, fontSize: 16 }}>
-              Claim #{String(claim.claim_id).padStart(4, "0")}
+              Claim #CLM{String(claim.claim_id).padStart(4, "0")}
             </h3>
             <p style={{ margin: "3px 0 0", fontSize: 12, opacity: 0.85 }}>
               {claim.claim_date}
@@ -54,70 +71,57 @@ function ClaimModal({ claim, onClose, hourlyRate }) {
             <button onClick={onClose} style={{
               background: "rgba(255,255,255,0.2)", border: "none",
               color: "white", width: 28, height: 28, borderRadius: "50%",
-              cursor: "pointer", fontSize: 16, display: "flex",
-              alignItems: "center", justifyContent: "center",
+              cursor: "pointer", fontSize: 16,
+              display: "flex", alignItems: "center", justifyContent: "center",
             }}>✕</button>
           </div>
         </div>
 
         {/* Body */}
         <div style={{ padding: "20px 24px" }}>
+
           {/* Shift Details */}
-          <div style={{ marginBottom: 16 }}>
-            <p style={{ fontSize: 11, color: "#667085", fontWeight: 700, textTransform: "uppercase", marginBottom: 10 }}>
-              Shift Details
-            </p>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              {[
-                { label: "Shift Type", value: claim.shift_type },
-                { label: "Claim Date", value: claim.claim_date },
-                { label: "Hours Worked", value: `${claim.hours_worked}h` },
-                { label: "Overtime Hours", value: `${claim.overtime_hours}h` },
-                { label: "Public Holiday", value: claim.is_holiday ? "Yes 🌟" : "No" },
-                { label: "Submitted", value: formatDate(claim.created_at) },
-              ].map(({ label, value }) => (
-                <div key={label} style={{
-                  background: "#f4f8fd", borderRadius: 8, padding: "10px 12px",
-                }}>
-                  <div style={{ fontSize: 11, color: "#667085", marginBottom: 3 }}>{label}</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#1d2939" }}>{value}</div>
-                </div>
-              ))}
-            </div>
+          <p style={{ fontSize: 11, color: "#667085", fontWeight: 700, textTransform: "uppercase", marginBottom: 10 }}>
+            Shift Details
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+            <DetailCell label="Shift Type"     value={claim.shift_type} />
+            <DetailCell label="Claim Date"     value={claim.claim_date} />
+            <DetailCell label="Hours Worked"   value={`${claim.hours_worked}h`} />
+            <DetailCell label="Overtime Hours" value={`${claim.overtime_hours}h`} />
+            <DetailCell label="Public Holiday" value={claim.is_holiday ? "Yes 🌟" : "No"} />
+            <DetailCell label="Submitted"      value={formatDate(claim.created_at)} />
           </div>
 
           {/* Earnings Breakdown */}
-          <div style={{ marginBottom: 16 }}>
-            <p style={{ fontSize: 11, color: "#667085", fontWeight: 700, textTransform: "uppercase", marginBottom: 10 }}>
-              Earnings Breakdown
-            </p>
-            <div style={{ border: "1px solid #e6edf5", borderRadius: 8, overflow: "hidden" }}>
-              {[
-                { label: "Normal Pay", value: formatZAR(normal) },
-                { label: "Overtime Pay (×1.5)", value: formatZAR(overtime) },
-                { label: "Holiday Pay", value: formatZAR(holiday) },
-              ].map(({ label, value }) => (
-                <div key={label} style={{
-                  display: "flex", justifyContent: "space-between",
-                  padding: "10px 14px", borderBottom: "1px solid #edf2f7",
-                  fontSize: 13,
-                }}>
-                  <span style={{ color: "#667085" }}>{label}</span>
-                  <span style={{ color: "#344054", fontWeight: 700 }}>{value}</span>
-                </div>
-              ))}
-              <div style={{
+          <p style={{ fontSize: 11, color: "#667085", fontWeight: 700, textTransform: "uppercase", marginBottom: 10 }}>
+            Earnings Breakdown
+          </p>
+          <div style={{ border: "1px solid #e6edf5", borderRadius: 8, overflow: "hidden", marginBottom: 16 }}>
+            {[
+              { label: "Normal Pay",          value: formatZAR(normal) },
+              { label: "Overtime Pay (×1.5)", value: formatZAR(overtime) },
+              { label: "Holiday Pay",         value: formatZAR(holiday) },
+            ].map(({ label, value }) => (
+              <div key={label} style={{
                 display: "flex", justifyContent: "space-between",
-                padding: "12px 14px", background: "#eaf4ff",
-                fontSize: 14, fontWeight: 800,
+                padding: "10px 14px", borderBottom: "1px solid #edf2f7", fontSize: 13,
               }}>
-                <span style={{ color: "#005bbb" }}>Total</span>
-                <span style={{ color: "#005bbb" }}>{formatZAR(total)}</span>
+                <span style={{ color: "#667085" }}>{label}</span>
+                <span style={{ color: "#344054", fontWeight: 700 }}>{value}</span>
               </div>
+            ))}
+            <div style={{
+              display: "flex", justifyContent: "space-between",
+              padding: "12px 14px", background: "#eaf4ff",
+              fontSize: 14, fontWeight: 800,
+            }}>
+              <span style={{ color: "#005bbb" }}>Total</span>
+              <span style={{ color: "#005bbb" }}>{formatZAR(total)}</span>
             </div>
           </div>
 
-          {/* Notes */}
+          {/* Description */}
           {claim.description && (
             <div style={{ marginBottom: 16 }}>
               <p style={{ fontSize: 11, color: "#667085", fontWeight: 700, textTransform: "uppercase", marginBottom: 6 }}>
@@ -135,9 +139,25 @@ function ClaimModal({ claim, onClose, hourlyRate }) {
               <p style={{ fontSize: 11, color: "#667085", fontWeight: 700, textTransform: "uppercase", marginBottom: 6 }}>
                 Admin Notes
               </p>
-              <p style={{ fontSize: 13, color: "#344054", background: claim.status === "Rejected" ? "#fff8f8" : "#f4f8fd", padding: "10px 14px", borderRadius: 8, margin: 0, border: `1px solid ${claim.status === "Rejected" ? "#fecaca" : "#e6edf5"}` }}>
+              <p style={{
+                fontSize: 13, color: "#344054", padding: "10px 14px",
+                borderRadius: 8, margin: 0,
+                background: isRejected ? "#fff8f8" : "#f4f8fd",
+                border: `1px solid ${isRejected ? "#fecaca" : "#e6edf5"}`,
+              }}>
                 {claim.approval.notes}
               </p>
+            </div>
+          )}
+
+          {/* Rejected banner */}
+          {isRejected && (
+            <div style={{
+              background: "#fff3e5", border: "1px solid #fed7aa",
+              borderRadius: 8, padding: "10px 14px",
+              fontSize: 13, color: "#b54708", marginBottom: 16,
+            }}>
+              ℹ️ This claim was rejected. An admin can reset it so you may edit and resubmit.
             </div>
           )}
 
@@ -161,28 +181,27 @@ function MyClaims() {
   // ===== Fetch profile for hourly rate =====
   const { data: profile } = useQuery({
     queryKey: QUERY_KEYS.PROFILE,
-    queryFn: profileApi.getProfile,
-    select: (d) => d.data,
+    queryFn:  profileApi.getProfile,
+    select:   (d) => d.data,
   });
 
   const hourlyRate = Number(profile?.employee?.hourly_rate || 0);
 
-  // ===== Fetch all claims =====
-  const { data: allClaims, isLoading } = useQuery({
+  // ===== Fetch all own claims =====
+  const { data: allClaims, isLoading, isError } = useQuery({
     queryKey: QUERY_KEYS.MY_CLAIMS({}),
-    queryFn: () => claimApi.getMyClaims({}),
-    select: (d) => d.data,
+    queryFn:  () => claimApi.getMyClaims({}),
+    select:   (d) => d.data,
   });
 
   // ===== Tab counts =====
   const counts = {
-    All: allClaims?.length || 0,
-    Pending: allClaims?.filter((c) => c.status === "Pending").length || 0,
+    All:      allClaims?.length || 0,
+    Pending:  allClaims?.filter((c) => c.status === "Pending").length  || 0,
     Approved: allClaims?.filter((c) => c.status === "Approved").length || 0,
     Rejected: allClaims?.filter((c) => c.status === "Rejected").length || 0,
   };
 
-  // ===== Filter by tab =====
   const filtered = activeTab === "All"
     ? allClaims || []
     : (allClaims || []).filter((c) => c.status === activeTab);
@@ -197,10 +216,7 @@ function MyClaims() {
             <h2>My Claims</h2>
             <p className="subtitle">Submit and track your shift claims.</p>
           </div>
-          <button
-            className="primary-btn"
-            onClick={() => navigate("/submit-claim")}
-          >
+          <button className="primary-btn" onClick={() => navigate("/submit-claim")}>
             + Submit Claim
           </button>
         </div>
@@ -221,9 +237,9 @@ function MyClaims() {
         {/* ===== Table ===== */}
         <div className="roster-table-card">
           {isLoading ? (
-            <p style={{ color: "#667085", fontSize: 13, padding: "20px 0" }}>
-              Loading claims...
-            </p>
+            <p style={{ color: "#667085", fontSize: 13, padding: "20px 0" }}>Loading claims...</p>
+          ) : isError ? (
+            <p style={{ color: "#b42318", fontSize: 13, padding: "20px 0" }}>Failed to load claims. Please try again.</p>
           ) : (
             <table className="roster-table">
               <thead>
@@ -242,44 +258,31 @@ function MyClaims() {
 
               <tbody>
                 {filtered.map((claim) => {
-                  const { total } = calcClaimEarnings(claim, hourlyRate);
+                  const { total } = calcClaimEarnings(claim, hourlyRate, claim.shift ?? null);
+                  const hasOT     = Number(claim.overtime_hours) > 0;
+
                   return (
                     <tr key={claim.claim_id}>
                       <td style={{ color: "#667085", fontSize: 12, fontFamily: "monospace" }}>
                         #CLM{String(claim.claim_id).padStart(4, "0")}
                       </td>
-                      <td style={{ color: "#344054", fontSize: 13 }}>
-                        {claim.claim_date}
-                      </td>
-                      <td style={{ color: "#344054", fontSize: 13 }}>
-                        {claim.shift_type}
-                      </td>
-                      <td style={{ color: "#344054", fontSize: 13 }}>
-                        {claim.hours_worked}h
-                      </td>
-                      <td style={{ color: Number(claim.overtime_hours) > 0 ? "#b54708" : "#667085", fontSize: 13, fontWeight: Number(claim.overtime_hours) > 0 ? 700 : 400 }}>
+                      <td style={{ color: "#344054", fontSize: 13 }}>{claim.claim_date}</td>
+                      <td style={{ color: "#344054", fontSize: 13 }}>{claim.shift_type}</td>
+                      <td style={{ color: "#344054", fontSize: 13 }}>{claim.hours_worked}h</td>
+                      <td style={{ color: hasOT ? "#b54708" : "#667085", fontSize: 13, fontWeight: hasOT ? 700 : 400 }}>
                         {claim.overtime_hours}h
                       </td>
                       <td>
-                        {claim.is_holiday ? (
-                          <span style={{ color: "#7a3aed", fontWeight: 700, fontSize: 12 }}>
-                            🌟 Yes
-                          </span>
-                        ) : (
-                          <span style={{ color: "#667085", fontSize: 13 }}>No</span>
-                        )}
+                        {claim.is_holiday
+                          ? <span style={{ color: "#7a3aed", fontWeight: 700, fontSize: 12 }}>🌟 Yes</span>
+                          : <span style={{ color: "#667085", fontSize: 13 }}>No</span>}
                       </td>
                       <td style={{ color: "#006fd6", fontSize: 13, fontWeight: 700 }}>
                         {formatZAR(total)}
                       </td>
+                      <td><StatusBadge status={claim.status} /></td>
                       <td>
-                        <StatusBadge status={claim.status} />
-                      </td>
-                      <td>
-                        <button
-                          className="view-link"
-                          onClick={() => setViewClaim(claim)}
-                        >
+                        <button className="view-link" onClick={() => setViewClaim(claim)}>
                           View
                         </button>
                       </td>
@@ -290,9 +293,7 @@ function MyClaims() {
                 {!filtered.length && (
                   <tr>
                     <td colSpan={9} style={{ textAlign: "center", color: "#667085", padding: "32px 0" }}>
-                      {activeTab === "All"
-                        ? "No claims submitted yet."
-                        : `No ${activeTab.toLowerCase()} claims.`}
+                      {activeTab === "All" ? "No claims submitted yet." : `No ${activeTab.toLowerCase()} claims.`}
                     </td>
                   </tr>
                 )}
@@ -305,7 +306,6 @@ function MyClaims() {
           </p>
         </div>
 
-        {/* ===== View Modal ===== */}
         {viewClaim && (
           <ClaimModal
             claim={viewClaim}

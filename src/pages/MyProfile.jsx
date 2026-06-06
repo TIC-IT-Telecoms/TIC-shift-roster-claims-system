@@ -1,4 +1,3 @@
-// src/pages/MyProfile.jsx
 import { useState } from "react";
 import Layout from "../components/Layout";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -236,53 +235,6 @@ function MyProfile() {
             <InfoItem label="Status">
               <StatusPill status={emp?.status} />
             </InfoItem>
-
-            {/* ===== Change Password ===== */}
-            <div style={{ marginTop: 20, borderTop: "1px solid #edf2f7", paddingTop: 16 }}>
-              <button
-                className="small-edit-btn"
-                onClick={() => {
-                  setShowPasswordSection(!showPasswordSection);
-                  setErrorMsg("");
-                  setSuccessMsg("");
-                  setPasswordForm({ old_password: "", new_password: "", confirm_password: "" });
-                }}
-              >
-                {showPasswordSection ? "✕ Cancel" : "🔒 Change Password"}
-              </button>
-
-              {showPasswordSection && (
-                <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
-                  {[
-                    { key: "old_password", label: "Current Password" },
-                    { key: "new_password", label: "New Password" },
-                    { key: "confirm_password", label: "Confirm New Password" },
-                  ].map(({ key, label }) => (
-                    <div key={key}>
-                      <label style={{ fontSize: 12, color: "#667085", display: "block", marginBottom: 4 }}>
-                        {label}
-                      </label>
-                      <input
-                        type="password"
-                        value={passwordForm[key]}
-                        onChange={(e) => setPasswordForm({ ...passwordForm, [key]: e.target.value })}
-                        style={inputStyle()}
-                        onFocus={(e) => (e.target.style.borderColor = "#006fd6")}
-                        onBlur={(e) => (e.target.style.borderColor = "#d0d5dd")}
-                      />
-                    </div>
-                  ))}
-                  <button
-                    className="primary-btn"
-                    onClick={handlePasswordChange}
-                    disabled={changePassword.isPending}
-                    style={{ marginTop: 4 }}
-                  >
-                    {changePassword.isPending ? "Updating..." : "Update Password"}
-                  </button>
-                </div>
-              )}
-            </div>
           </div>
 
           {/* ===== Work Information ===== */}
@@ -302,7 +254,7 @@ function MyProfile() {
             <InfoItem label="Employment Type" value={emp?.employment_type} />
 
             <InfoItem label="Join Date">
-              <strong>{formatDate(emp?.join_date)}</strong>
+              <strong>{formatDate(emp?.created_at)}</strong>
             </InfoItem>
 
             <InfoItem label="Member Since">
@@ -342,8 +294,6 @@ function MyProfile() {
             <p style={{ textTransform: "capitalize", color: "#667085", margin: "4px 0 12px" }}>
               {emp?.employment_type || formatRole(user?.role)}
             </p>
-
-            <StatusPill status={emp?.status} />
 
             <button
               className="change-photo-btn"

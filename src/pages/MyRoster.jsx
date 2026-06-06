@@ -214,9 +214,9 @@ function MyRoster() {
                       <td>{formatDay(entry.roster_date)}</td>
                       <td>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          {isHoliday && (
+                          {/* {isHoliday && (
                             <span style={{ fontSize: 12 }}>🌟</span>
-                          )}
+                          )} */}
                           {getShiftName(entry)}
                         </div>
                       </td>

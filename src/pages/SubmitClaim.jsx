@@ -7,9 +7,14 @@ import { claimApi } from "../api/claimApi";
 import { rosterApi } from "../api/rosterApi";
 import { profileApi } from "../api/profileApi";
 import { QUERY_KEYS } from "../utils/queryKeys";
-import { getTodayStr, getMonthStart, formatZAR, calcClaimEarnings } from "../utils/helpers";
+import {
+  getTodayStr,
+  getMonthStart,
+  formatZAR,
+  calcClaimEarnings,
+} from "../utils/helpers";
 
-const todayStr = getTodayStr();
+const todayStr   = getTodayStr();
 const monthStart = getMonthStart();
 
 const SHIFT_TYPES = ["Early Shift", "Night Shift", "Grave Shift"];
@@ -17,36 +22,51 @@ const SHIFT_TYPES = ["Early Shift", "Night Shift", "Grave Shift"];
 // ===== Status Badge =====
 const StatusBadge = ({ status }) => {
   const map = {
-    Pending: "status-pending",
+    Pending:  "status-pending",
     Approved: "status-approved",
     Rejected: "status-rejected",
   };
   return <span className={map[status] || "status-pending"}>{status}</span>;
 };
 
+// ===== Holiday detection via API =====
+const checkHolidayApi = async (dateStr) => {
+  const res  = await fetch(`/api/holidays/check/${dateStr}`, { credentials: "include" });
+  const json = await res.json();
+  return json?.data?.is_holiday ? json.data.holiday : null;
+};
+
+// ===== Get next calendar day =====
+const getNextDay = (dateStr) => {
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().split("T")[0];
+};
+
 function SubmitClaim() {
   const navigate = useNavigate();
-  const qc = useQueryClient();
+  const qc       = useQueryClient();
 
   const [form, setForm] = useState({
-    claim_date: todayStr,
-    shift_type: "",
-    hours_worked: 8,
+    claim_date:     todayStr,
+    shift_type:     "",
+    hours_worked:   8,
     overtime_hours: 0,
-    description: "",
+    description:    "",
   });
 
-  const [rosterEntry, setRosterEntry] = useState(null);
-  const [holidayInfo, setHolidayInfo] = useState(null);
-  const [checkingDate, setCheckingDate] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [rosterEntry,       setRosterEntry]       = useState(null);
+  const [holidayInfo,       setHolidayInfo]       = useState(null);   // today's holiday
+  const [nextDayHoliday,    setNextDayHoliday]    = useState(null);   // tomorrow's holiday (grave shifts)
+  const [checkingDate,      setCheckingDate]      = useState(false);
+  const [error,             setError]             = useState("");
+  const [success,           setSuccess]           = useState("");
 
   // ===== Fetch profile for hourly rate =====
   const { data: profile } = useQuery({
     queryKey: QUERY_KEYS.PROFILE,
-    queryFn: profileApi.getProfile,
-    select: (d) => d.data,
+    queryFn:  profileApi.getProfile,
+    select:   (d) => d.data,
   });
 
   const hourlyRate = Number(profile?.employee?.hourly_rate || 0);
@@ -54,31 +74,32 @@ function SubmitClaim() {
   // ===== Fetch recent claims =====
   const { data: recentClaims } = useQuery({
     queryKey: QUERY_KEYS.MY_CLAIMS({ start_date: monthStart, end_date: todayStr }),
-    queryFn: () => claimApi.getMyClaims({ start_date: monthStart, end_date: todayStr }),
-    select: (d) => d.data?.slice(0, 5),
+    queryFn:  () => claimApi.getMyClaims({ start_date: monthStart, end_date: todayStr }),
+    select:   (d) => d.data?.slice(0, 5),
   });
 
-  // ===== When date changes: fetch roster entry + check holiday =====
+  // ===== When date changes: fetch roster + holiday (+ next day for grave) =====
   useEffect(() => {
     if (!form.claim_date) return;
 
-    const fetchDateInfo = async () => {
+    const run = async () => {
       setCheckingDate(true);
       setRosterEntry(null);
       setHolidayInfo(null);
+      setNextDayHoliday(null);
       setError("");
 
       try {
-        // Fetch roster for that date
+        // 1. Roster for this date
         const rosterRes = await rosterApi.getMyRoster({
           start_date: form.claim_date,
-          end_date: form.claim_date,
+          end_date:   form.claim_date,
         });
 
-        const entries = rosterRes?.data?.roster || [];
-        const entry = Array.isArray(entries)
-          ? entries[0]
-          : Object.values(entries).flat()[0];
+        const raw   = rosterRes?.data?.roster || [];
+        const entry = Array.isArray(raw)
+          ? raw[0]
+          : Object.values(raw).flat()[0];
 
         setRosterEntry(entry || null);
 
@@ -87,27 +108,28 @@ function SubmitClaim() {
           setForm((f) => ({ ...f, shift_type: entry.shift.shift_name }));
         }
 
-        // Check holiday
-        const holidayRes = await fetch(
-          `/api/holidays/check/${form.claim_date}`,
-          { credentials: "include" }
-        );
-        const holidayData = await holidayRes.json();
-        if (holidayData?.data?.is_holiday) {
-          setHolidayInfo(holidayData.data.holiday);
+        // 2. Holiday check for the claim date
+        const todayHol = await checkHolidayApi(form.claim_date);
+        setHolidayInfo(todayHol);
+
+        // 3. For grave shifts also check next day
+        if (entry?.shift?.is_grave) {
+          const nextDay    = getNextDay(form.claim_date);
+          const nextDayHol = await checkHolidayApi(nextDay);
+          setNextDayHoliday(nextDayHol);
         }
-      } catch (err) {
+      } catch {
         // Silent fail — user can still fill manually
       } finally {
         setCheckingDate(false);
       }
     };
 
-    fetchDateInfo();
+    run();
   }, [form.claim_date]);
 
   // ===== Submit =====
-  const submitClaim = useMutation({
+  const submitMutation = useMutation({
     mutationFn: claimApi.submit,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["claims"] });
@@ -125,32 +147,40 @@ function SubmitClaim() {
     e.preventDefault();
     setError("");
 
-    if (!form.shift_type) { setError("Please select a shift type."); return; }
+    if (!form.shift_type) {
+      setError("Please select a shift type."); return;
+    }
     if (!form.hours_worked || Number(form.hours_worked) <= 0) {
       setError("Hours worked must be greater than 0."); return;
     }
 
-    submitClaim.mutate({
-      claim_date: form.claim_date,
-      shift_type: form.shift_type,
-      hours_worked: Number(form.hours_worked),
+    submitMutation.mutate({
+      claim_date:     form.claim_date,
+      shift_type:     form.shift_type,
+      hours_worked:   Number(form.hours_worked),
       overtime_hours: Number(form.overtime_hours || 0),
-      description: form.description.trim() || null,
+      description:    form.description.trim() || null,
     });
   };
 
   // ===== Live earnings preview =====
+  // Passes the shift and next-day holiday flag so calcClaimEarnings
+  // can apply the grave-shift midnight split correctly
   const previewClaim = {
-    hours_worked: Number(form.hours_worked || 0),
+    hours_worked:   Number(form.hours_worked  || 0),
     overtime_hours: Number(form.overtime_hours || 0),
-    is_holiday: !!holidayInfo,
+    is_holiday:     !!(holidayInfo || nextDayHoliday),
   };
-  const { normal, overtime, holiday, total } = calcClaimEarnings(previewClaim, hourlyRate);
+  const { normal, overtime, holiday, total } = calcClaimEarnings(
+    previewClaim,
+    hourlyRate,
+    rosterEntry?.shift ?? null,      // shift detail for grave split
+    !!nextDayHoliday                 // is next day a holiday?
+  );
 
-  // ===== Roster status helpers =====
-  const isOff = rosterEntry?.status === "Off";
-  const isScheduled = rosterEntry?.status === "Scheduled" || rosterEntry?.status === "Holiday";
+  const isOff       = rosterEntry?.status === "Off";
   const rosterShift = rosterEntry?.shift?.shift_name;
+  const isGrave     = rosterEntry?.shift?.is_grave;
 
   return (
     <Layout>
@@ -180,29 +210,34 @@ function SubmitClaim() {
         )}
 
         <div className="submit-claim-grid">
-
-          {/* ===== Claim Form ===== */}
           <div className="claim-form-card">
             <h3>Claim Details</h3>
 
-            {/* Roster status banner */}
+            {/* ===== Roster Banner ===== */}
             {checkingDate && (
               <div style={{ padding: "10px 14px", background: "#f4f8fd", borderRadius: 8, marginBottom: 14, fontSize: 13, color: "#667085" }}>
                 Checking your roster for this date...
               </div>
             )}
 
-            {!checkingDate && rosterEntry && (
+            {!checkingDate && rosterEntry && !isOff && (
               <div style={{
                 padding: "10px 14px", borderRadius: 8, marginBottom: 14,
-                fontSize: 13, fontWeight: 700,
-                background: isOff ? "#fff3e5" : "#e8f8ef",
-                border: `1px solid ${isOff ? "#fed7aa" : "#bbf7d0"}`,
-                color: isOff ? "#b54708" : "#157347",
+                background: "#e8f8ef", border: "1px solid #bbf7d0",
+                color: "#157347", fontSize: 13, fontWeight: 700,
               }}>
-                {isOff
-                  ? "⚠️ You are scheduled Off on this date. Claims cannot be submitted for Off days."
-                  : `✓ Roster match: ${rosterShift} · ${rosterEntry.shift?.start_time?.slice(0, 5)} – ${rosterEntry.shift?.end_time?.slice(0, 5)}`}
+                ✓ Roster match: {rosterShift} · {rosterEntry.shift?.start_time?.slice(0,5)} – {rosterEntry.shift?.end_time?.slice(0,5)}
+                {isGrave && " 🌙 (Overnight)"}
+              </div>
+            )}
+
+            {!checkingDate && isOff && (
+              <div style={{
+                padding: "10px 14px", background: "#fff3e5",
+                border: "1px solid #fed7aa", borderRadius: 8,
+                marginBottom: 14, fontSize: 13, color: "#b54708", fontWeight: 700,
+              }}>
+                ⚠️ You are scheduled Off on this date. Claims cannot be submitted for Off days.
               </div>
             )}
 
@@ -216,13 +251,26 @@ function SubmitClaim() {
               </div>
             )}
 
+            {/* ===== Holiday Banners ===== */}
             {holidayInfo && (
+              <div style={{
+                padding: "10px 14px", background: "#f1eaff",
+                border: "1px solid #d8b4fe", borderRadius: 8,
+                marginBottom: 10, fontSize: 13, color: "#7a3aed", fontWeight: 700,
+              }}>
+                🌟 Public Holiday: {holidayInfo.holiday_name}
+                {isGrave && " — Holiday pay applies to 22:00–00:00 portion."}
+              </div>
+            )}
+
+            {nextDayHoliday && isGrave && (
               <div style={{
                 padding: "10px 14px", background: "#f1eaff",
                 border: "1px solid #d8b4fe", borderRadius: 8,
                 marginBottom: 14, fontSize: 13, color: "#7a3aed", fontWeight: 700,
               }}>
-                🌟 Public Holiday: {holidayInfo.holiday_name} — Holiday pay will be applied automatically.
+                🌟 Tomorrow is a public holiday: {nextDayHoliday.holiday_name}
+                {" "}— Holiday pay applies to 00:00–06:00 portion of your grave shift.
               </div>
             )}
 
@@ -253,7 +301,7 @@ function SubmitClaim() {
                   </select>
                   {rosterShift && form.shift_type && rosterShift !== form.shift_type && (
                     <p style={{ fontSize: 11, color: "#b42318", marginTop: 4 }}>
-                      ⚠ Mismatch: your roster shows {rosterShift}
+                      ⚠ Mismatch: your roster shows "{rosterShift}"
                     </p>
                   )}
                 </div>
@@ -281,21 +329,22 @@ function SubmitClaim() {
                 </div>
               </div>
 
-              {/* Public Holiday — auto-detected, read only display */}
+              {/* Public holiday — read-only, auto-detected */}
               <div className="form-group">
                 <label>Public Holiday</label>
                 <div style={{
                   padding: "10px 14px", borderRadius: 8, fontSize: 13,
-                  background: holidayInfo ? "#f1eaff" : "#f4f8fd",
-                  border: `1px solid ${holidayInfo ? "#d8b4fe" : "#e6edf5"}`,
-                  color: holidayInfo ? "#7a3aed" : "#667085",
-                  fontWeight: holidayInfo ? 700 : 400,
+                  background: (holidayInfo || nextDayHoliday) ? "#f1eaff" : "#f4f8fd",
+                  border: `1px solid ${(holidayInfo || nextDayHoliday) ? "#d8b4fe" : "#e6edf5"}`,
+                  color: (holidayInfo || nextDayHoliday) ? "#7a3aed" : "#667085",
+                  fontWeight: (holidayInfo || nextDayHoliday) ? 700 : 400,
                 }}>
-                  {checkingDate
-                    ? "Checking..."
-                    : holidayInfo
-                      ? `🌟 Yes — ${holidayInfo.holiday_name}`
-                      : "No — auto-detected from system"}
+                  {checkingDate ? "Checking..." : (
+                    holidayInfo && nextDayHoliday ? `🌟 Both today (${holidayInfo.holiday_name}) and tomorrow (${nextDayHoliday.holiday_name}) are public holidays` :
+                    holidayInfo      ? `🌟 Yes — ${holidayInfo.holiday_name}` :
+                    nextDayHoliday   ? `🌟 Next day is a holiday — ${nextDayHoliday.holiday_name}` :
+                    "No — auto-detected from system"
+                  )}
                 </div>
               </div>
 
@@ -305,7 +354,12 @@ function SubmitClaim() {
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   placeholder="Optional — e.g. Network incident, extra hours worked..."
-                  style={{ width: "100%", padding: 11, border: "1px solid #d0d5dd", borderRadius: 8, fontSize: 13, outline: "none", minHeight: 90, resize: "vertical", fontFamily: "inherit", boxSizing: "border-box" }}
+                  style={{
+                    width: "100%", padding: 11, border: "1px solid #d0d5dd",
+                    borderRadius: 8, fontSize: 13, outline: "none",
+                    minHeight: 90, resize: "vertical",
+                    fontFamily: "inherit", boxSizing: "border-box",
+                  }}
                 />
               </div>
 
@@ -315,13 +369,22 @@ function SubmitClaim() {
                   border: "1px solid #e6edf5", borderRadius: 10,
                   overflow: "hidden", marginBottom: 4,
                 }}>
-                  <div style={{ background: "#f4f8fd", padding: "10px 14px", fontSize: 12, fontWeight: 700, color: "#667085", textTransform: "uppercase" }}>
+                  <div style={{
+                    background: "#f4f8fd", padding: "10px 14px",
+                    fontSize: 12, fontWeight: 700, color: "#667085",
+                    textTransform: "uppercase",
+                  }}>
                     Estimated Earnings Preview
+                    {isGrave && (holidayInfo || nextDayHoliday) && (
+                      <span style={{ marginLeft: 8, color: "#7a3aed", textTransform: "none", fontSize: 11 }}>
+                        (midnight split applied)
+                      </span>
+                    )}
                   </div>
                   {[
-                    { label: "Normal Pay", value: formatZAR(normal) },
+                    { label: "Normal Pay",          value: formatZAR(normal) },
                     { label: "Overtime Pay (×1.5)", value: formatZAR(overtime) },
-                    { label: "Holiday Pay", value: formatZAR(holiday) },
+                    { label: "Holiday Pay",         value: formatZAR(holiday) },
                   ].map(({ label, value }) => (
                     <div key={label} style={{
                       display: "flex", justifyContent: "space-between",
@@ -353,9 +416,9 @@ function SubmitClaim() {
                 <button
                   type="submit"
                   className="primary-btn"
-                  disabled={submitClaim.isPending || isOff}
+                  disabled={submitMutation.isPending || isOff}
                 >
-                  {submitClaim.isPending ? "Submitting..." : "Submit Claim"}
+                  {submitMutation.isPending ? "Submitting..." : "Submit Claim"}
                 </button>
               </div>
             </form>
@@ -366,7 +429,7 @@ function SubmitClaim() {
             <h3>My Recent Claims</h3>
 
             {!recentClaims?.length ? (
-              <p style={{ color: "#667085", fontSize: 13 }}>No recent claims.</p>
+              <p style={{ color: "#667085", fontSize: 13 }}>No recent claims this month.</p>
             ) : (
               recentClaims.map((claim) => (
                 <div key={claim.claim_id} className="recent-claim-item">
@@ -391,10 +454,9 @@ function SubmitClaim() {
               onClick={() => navigate("/claims")}
               style={{ cursor: "pointer" }}
             >
-              View All
+              View All Claims
             </a>
           </div>
-
         </div>
       </section>
     </Layout>

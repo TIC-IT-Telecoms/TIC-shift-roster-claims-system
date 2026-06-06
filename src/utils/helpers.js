@@ -40,9 +40,7 @@ export const formatRole = (role) => {
  */
 export const formatSupervisor = (supervisor) => {
   if (!supervisor) return "—";
-  const roleLabel =
-    supervisor.role === "admin" ? "Administrator" : formatRole(supervisor.role);
-  return `${supervisor.name} (${roleLabel})`;
+ return `${supervisor.name}`;
 };
 
 /**
@@ -314,12 +312,70 @@ export const countScheduled = (rosterData) =>
 /**
  * Calculate earnings for a single claim
  */
-export const calcClaimEarnings = (claim, hourlyRate) => {
-  const rate = Number(hourlyRate || 0);
-  const normal = Number(claim.hours_worked || 0) * rate;
-  const overtime = Number(claim.overtime_hours || 0) * rate * 1.5;
-  const holiday = claim.is_holiday ? Number(claim.hours_worked || 0) * rate : 0;
-  return { normal, overtime, holiday, total: normal + overtime + holiday };
+// src/utils/helpers.js — replace calcClaimEarnings
+
+/**
+ * Calculate earnings for a single claim with grave shift holiday split support.
+ *
+ * @param {Object} claim        - Claim record
+ * @param {number} hourlyRate   - Employee hourly rate
+ * @param {Object} [shift]      - Optional shift record for grave split calculation
+ * @param {boolean} [isNextDayHoliday] - Is the day after the claim date a holiday?
+ */
+export const calcClaimEarnings = (claim, hourlyRate, shift = null, isNextDayHoliday = false) => {
+  const rate         = Number(hourlyRate || 0);
+  const hoursWorked  = Number(claim.hours_worked  || 0);
+  const overtimeHrs  = Number(claim.overtime_hours || 0);
+  const isHoliday    = claim.is_holiday;
+
+  let holidayHours = 0;
+  let normalHours  = hoursWorked;
+
+  if (isHoliday && shift) {
+    // Use the precise split for grave shifts
+    const startH = parseInt(shift.start_time?.split(':')[0] ?? 0, 10);
+    const endH   = parseInt(shift.end_time?.split(':')[0]   ?? 0, 10);
+    const totalShiftHours = shift.is_grave || endH < startH
+      ? (24 - startH) + endH
+      : endH - startH;
+
+    if (totalShiftHours > 0) {
+      const { holiday_hours: hh } = (() => {
+        if (!shift.is_grave) {
+          return { holiday_hours: isHoliday ? totalShiftHours : 0 };
+        }
+        // Grave shift split
+        const hoursBeforeMidnight = 24 - startH;
+        const hoursAfterMidnight  = endH;
+        if (isHoliday && isNextDayHoliday) return { holiday_hours: totalShiftHours };
+        if (isHoliday)        return { holiday_hours: hoursBeforeMidnight };
+        if (isNextDayHoliday) return { holiday_hours: hoursAfterMidnight };
+        return { holiday_hours: 0 };
+      })();
+
+      // Scale to actual hours worked (employee may work fewer than full shift)
+      const ratio    = hoursWorked / totalShiftHours;
+      holidayHours   = Math.min(hh * ratio, hoursWorked);
+      normalHours    = hoursWorked - holidayHours;
+    }
+  } else if (isHoliday) {
+    // No shift detail available — treat all hours as holiday
+    holidayHours = hoursWorked;
+    normalHours  = 0;
+  }
+
+  const normal   = normalHours  * rate;
+  const overtime = overtimeHrs  * rate * 1.5;
+  const holiday  = holidayHours * rate; // holiday pay = rate × holiday hours (base rate already included)
+
+  return {
+    normal,
+    overtime,
+    holiday,
+    holiday_hours: holidayHours,
+    normal_hours:  normalHours,
+    total: normal + overtime + holiday,
+  };
 };
 
 /**

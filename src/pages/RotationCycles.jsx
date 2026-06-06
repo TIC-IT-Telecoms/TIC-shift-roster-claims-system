@@ -6,6 +6,7 @@ import { teamApi } from "../api/teamApi";
 import { shiftApi } from "../api/shiftApi";
 import { QUERY_KEYS } from "../utils/queryKeys";
 import { formatDate, getTodayStr } from "../utils/helpers";
+import ConfirmationModal from "../components/ui/ConfirmationModal";
 
 const todayStr = getTodayStr();
 
@@ -43,6 +44,7 @@ function CycleModal({ cycle, teams, shifts, onClose, onSuccess }) {
     })) || [],
   });
   const [error, setError] = useState("");
+  const [confirmingCycle, setConfirmingCycle] = useState(null);
   const qc = useQueryClient();
 
   const createCycle = useMutation({
@@ -88,6 +90,16 @@ function CycleModal({ cycle, teams, shifts, onClose, onSuccess }) {
     };
 
     isEdit ? updateCycle.mutate(payload) : createCycle.mutate(payload);
+  };
+
+  const confirmDelete = () => {
+    if (!confirmingCycle) return;
+
+    deleteCycle.mutate(confirmingCycle.rotation_id, {
+      onSuccess: () => {
+        setConfirmingCycle(null);
+      },
+    });
   };
 
   const isPending = createCycle.isPending || updateCycle.isPending;
@@ -331,7 +343,11 @@ function RotationCycles() {
   });
 
   const handleDelete = (cycle) => {
-    if (!confirm(`Delete "${cycle.cycle_name}"? This cannot be undone.`)) return;
+    if (cycle.details?.length > 0) {
+      if (!window.confirm(`This cycle has ${cycle.details.length} day assignments. Are you sure you want to delete it?`)) {
+        return;
+      }
+    }
     deleteCycle.mutate(cycle.rotation_id);
   };
 

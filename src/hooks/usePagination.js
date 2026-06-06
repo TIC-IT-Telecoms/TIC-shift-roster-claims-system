@@ -1,29 +1,45 @@
-import { useState, useEffect } from "react";
+// src/hooks/usePagination.js
+import { useState, useMemo, useEffect } from 'react';
 
-export default function usePagination(
-  data = [],
-  pageSize = 10
-) {
+/**
+ * Client-side pagination hook.
+ *
+ * @param {Array}  data      - Full dataset to paginate
+ * @param {number} pageSize  - Rows per page (default 10)
+ * @returns {{ currentPage, setCurrentPage, resetPage, totalPages, paginatedData, pageSize, startIndex, endIndex }}
+ */
+const usePagination = (data = [], pageSize = 10) => {
   const [currentPage, setCurrentPage] = useState(1);
 
+  const totalPages = Math.max(1, Math.ceil(data.length / pageSize));
+
+  // Auto-clamp if data shrinks below current page
   useEffect(() => {
-    setCurrentPage(1);
-  }, [data.length]);
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
 
-  const totalPages = Math.ceil(
-    data.length / pageSize
-  );
+  const safePage = Math.min(currentPage, totalPages);
 
-  const paginatedData = data.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
+  const paginatedData = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    return data.slice(start, start + pageSize);
+  }, [data, safePage, pageSize]);
+
+  const startIndex = data.length === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const endIndex   = Math.min(safePage * pageSize, data.length);
 
   return {
-    currentPage,
+    currentPage:  safePage,
     setCurrentPage,
+    resetPage:    () => setCurrentPage(1),
     totalPages,
     paginatedData,
     pageSize,
+    startIndex,
+    endIndex,
   };
-}
+};
+
+export default usePagination;

@@ -44,8 +44,8 @@ function Dashboard() {
   });
 
   const { data: approvedClaims } = useQuery({
-    queryKey: QUERY_KEYS.MY_CLAIMS({ status: "Approved", start_date: monthStart, end_date: todayStr }),
-    queryFn: () => claimApi.getMyClaims({ status: "Approved", start_date: monthStart, end_date: todayStr }),
+    queryKey: QUERY_KEYS.MY_CLAIMS({ status: "Approved" }),
+    queryFn: () => claimApi.getMyClaims({ status: "Approved" }),
     select: (d) => d.data,
   });
 
@@ -138,7 +138,7 @@ function Dashboard() {
                   const entry = entries[0];
                   const isToday = dateStr === todayStr;
                   const isOff = entry?.status === "Off";
-                  const isHoliday = entry?.status === "Holiday";
+                  // const isHoliday = entry?.status === "Holiday";
                   const label = getShiftLabel(entry);
                   const time = getShiftTime(entry);
 
@@ -156,7 +156,7 @@ function Dashboard() {
                       </small>
                       <span
                         className={isOff ? "off" : ""}
-                        style={isHoliday ? { background: "#f1eaff", color: "#7a3aed" } : {}}
+                        // style={isHoliday ? { background: "#f1eaff", color: "#7a3aed" } : {}}
                       >
                         {label}
                       </span>
@@ -176,6 +176,26 @@ function Dashboard() {
             </div>
 
             <ul className="notifications-list">
+              {nextShift && (
+                <li>
+                  <span />
+                  <div>
+                    <p>Next shift: <b>{nextShift.shift?.shift_name}</b> on {formatDate(nextShift.roster_date)}</p>
+                    <small>{getShiftTime(nextShift)}</small>
+                  </div>
+                </li>
+              )}
+              
+              {approvedClaims?.slice(0, 2).map((claim) => (
+                <li key={claim.claim_id}>
+                  <span />
+                  <div>
+                    <p>Your claim for <b>{claim.claim_date}</b> ({claim.shift_type}) is approved.</p>
+                    <small>{formatDate(claim.created_at)}</small>
+                  </div>
+                </li>
+              ))}
+
               {pendingClaims?.slice(0, 2).map((claim) => (
                 <li key={claim.claim_id}>
                   <span />
@@ -186,15 +206,7 @@ function Dashboard() {
                 </li>
               ))}
 
-              {nextShift && (
-                <li>
-                  <span />
-                  <div>
-                    <p>Next shift: <b>{nextShift.shift?.shift_name}</b> on {formatDate(nextShift.roster_date)}</p>
-                    <small>{getShiftTime(nextShift)}</small>
-                  </div>
-                </li>
-              )}
+              
 
               {!pendingClaims?.length && !nextShift && (
                 <li>
