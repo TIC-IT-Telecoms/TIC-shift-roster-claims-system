@@ -1,4 +1,3 @@
-// src/pages/MyRoster.jsx
 import { useState } from "react";
 import Layout from "../components/Layout";
 import { useQuery } from "@tanstack/react-query";
@@ -214,9 +213,9 @@ function MyRoster() {
                       <td>{formatDay(entry.roster_date)}</td>
                       <td>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          {isHoliday && (
+                          {/* {isHoliday && (
                             <span style={{ fontSize: 12 }}>🌟</span>
-                          )}
+                          )} */}
                           {getShiftName(entry)}
                         </div>
                       </td>

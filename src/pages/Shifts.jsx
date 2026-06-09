@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { shiftApi } from "../api/shiftApi";
 import { QUERY_KEYS } from "../utils/queryKeys";
 import AddShift from "./AddShift";
+import ConfirmationModal from "../components/ui/ConfirmationModal";
 
 // ===== Shift color badge =====
 const ShiftBadge = ({ shift }) => {
@@ -38,6 +39,7 @@ function Shifts() {
   const [showModal, setShowModal] = useState(false);
   const [editShift, setEditShift] = useState(null);
   const [successMsg, setSuccessMsg] = useState("");
+  const [deleteShiftId, setDeleteShiftId] = useState(null);
 
   // Auto-dismiss success message
   const showSuccess = (msg) => {
@@ -63,8 +65,17 @@ function Shifts() {
   });
 
   const handleDelete = (shift) => {
-    if (!confirm(`Delete "${shift.shift_name}"? This cannot be undone.`)) return;
-    deleteShift.mutate(shift.shift_id);
+    setDeleteShiftId(shift.shift_id);
+  };
+
+  const confirmDelete = () => {
+    if (!deleteShiftId) return;
+
+    deleteShift.mutate(deleteShiftId, {
+      onSuccess: () => {
+        setDeleteShiftId(null);
+      },
+    });
   };
 
   // ===== Modal handlers =====
@@ -279,6 +290,19 @@ function Shifts() {
             shift={editShift}
             onClose={closeModal}
             onSuccess={handleModalSuccess}
+          />
+        )}
+
+        {/* ===== Delete Confirmation Modal ===== */}
+        {deleteShiftId && (
+          <ConfirmationModal
+            title="Delete Shift"
+            message={`Are you sure you want to delete this shift? This cannot be undone.`}
+            confirmText="Delete"
+            confirmColor="#dc2626"
+            isPending={deleteShift.isPending}
+            onConfirm={confirmDelete}
+            onClose={() => setDeleteShiftId(null)}
           />
         )}
 

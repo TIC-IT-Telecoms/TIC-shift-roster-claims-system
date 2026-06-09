@@ -2,15 +2,14 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { employeeApi } from "../api/employeeApi";
 import { QUERY_KEYS } from "../utils/queryKeys";
-import { formatRole } from "../utils/helpers";
+import { formatRole, formatDisplayDate } from "../utils/helpers";
 
 const EMPLOYMENT_TYPES = ["Full Time", "Part Time", "Contract", "Intern"];
 
 const defaultForm = {
   name: "", email: "", phone: "", team_id: "",
-  hourly_rate: "", role: "employee", password: "",
+  hourly_rate: "", role: "Employee", password: "",
   employment_type: "Full Time", id_number: "",
-  join_date: "", address: "", supervisor_id: "",
 };
 
 // ===== Shared input style =====
@@ -56,7 +55,7 @@ function AddEmployee({ employee, teams, employees, onClose, onSuccess }) {
       password: "",
       employment_type: employee.employment_type || "Full Time",
       id_number: employee.id_number || "",
-      join_date: employee.join_date || "",
+      join_date: formatDisplayDate(employee.created_at) || "",
       address: employee.address || "",
       supervisor_id: employee.supervisor_id || "",
     } : defaultForm
@@ -95,7 +94,6 @@ function AddEmployee({ employee, teams, employees, onClose, onSuccess }) {
       team_id: form.team_id || null,
       supervisor_id: form.supervisor_id || null,
       hourly_rate: form.hourly_rate ? Number(form.hourly_rate) : null,
-      join_date: form.join_date || null,
     };
     if (isEdit) delete payload.password;
     isEdit ? updateEmployee.mutate(payload) : createEmployee.mutate(payload);
@@ -228,11 +226,10 @@ const supervisors = (employees || []).filter((e) => {
                   placeholder="50.00" value={form.hourly_rate} onChange={set("hourly_rate")}
                   onFocus={onFocus} onBlur={onBlur} />
               </Field>
-              <Field label="Join Date">
-                <input type="date" style={inp}
-                  value={form.join_date} onChange={set("join_date")}
-                  onFocus={onFocus} onBlur={onBlur} />
-              </Field>
+              {isEdit && (<Field label="Join Date">
+                <input type="text" style={inp}
+                  value={form.join_date} disabled />
+              </Field>)}
               <Field label="Supervisor">
                 <select style={inp} value={form.supervisor_id} onChange={set("supervisor_id")}>
                   <option value="">No supervisor</option>

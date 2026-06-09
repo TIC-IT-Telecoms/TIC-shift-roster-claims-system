@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Layout from "../components/Layout";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { claimApi } from "../api/claimApi";
@@ -8,20 +8,29 @@ import Pagination from "../components/Pagination";
 import usePagination from "../hooks/usePagination";
 import ConfirmationModal from "../components/ui/ConfirmationModal";
 
+const PAGE_SIZE = 5;
+
 // ===== Status badge =====
 const StatusBadge = ({ status }) => {
   const map = {
-    Pending: "status-pending",
+    Pending:  "status-pending",
     Approved: "status-approved",
     Rejected: "status-rejected",
   };
   return <span className={map[status] || "status-pending"}>{status}</span>;
 };
 
-// ===== Reject modal with notes =====
+// ===== Detail grid cell =====
+const DetailCell = ({ label, value }) => (
+  <div style={{ background: "#f4f8fd", borderRadius: 8, padding: "10px 12px" }}>
+    <div style={{ fontSize: 11, color: "#667085", marginBottom: 3 }}>{label}</div>
+    <div style={{ fontSize: 13, fontWeight: 700, color: "#1d2939" }}>{value}</div>
+  </div>
+);
+
+// ===== Reject Modal =====
 function RejectModal({ claim, onClose, onConfirm, isPending }) {
   const [notes, setNotes] = useState("");
-
   return (
     <div style={{
       position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
@@ -35,28 +44,26 @@ function RejectModal({ claim, onClose, onConfirm, isPending }) {
       }}>
         <h3 style={{ margin: "0 0 6px", color: "#b42318" }}>Reject Claim</h3>
         <p style={{ fontSize: 13, color: "#667085", marginBottom: 16 }}>
-          Rejecting claim #{String(claim.claim_id).padStart(4, "0")} for{" "}
+          Rejecting claim #CLM{String(claim.claim_id).padStart(4, "0")} for{" "}
           <strong>{claim.employee?.name}</strong>. Please provide a reason.
         </p>
-        <div>
-          <label style={{ fontSize: 12, color: "#667085", display: "block", marginBottom: 6 }}>
-            Rejection Reason *
-          </label>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="e.g. Hours claimed do not match roster records..."
-            rows={3}
-            style={{
-              width: "100%", padding: "9px 12px",
-              border: "1px solid #d0d5dd", borderRadius: 8,
-              fontSize: 13, outline: "none", resize: "vertical",
-              fontFamily: "inherit", boxSizing: "border-box",
-            }}
-            onFocus={(e) => (e.target.style.borderColor = "#b42318")}
-            onBlur={(e) => (e.target.style.borderColor = "#d0d5dd")}
-          />
-        </div>
+        <label style={{ fontSize: 12, color: "#667085", display: "block", marginBottom: 6 }}>
+          Rejection Reason *
+        </label>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="e.g. Hours claimed do not match roster records..."
+          rows={3}
+          style={{
+            width: "100%", padding: "9px 12px",
+            border: "1px solid #d0d5dd", borderRadius: 8,
+            fontSize: 13, outline: "none", resize: "vertical",
+            fontFamily: "inherit", boxSizing: "border-box",
+          }}
+          onFocus={(e) => (e.target.style.borderColor = "#b42318")}
+          onBlur={(e)  => (e.target.style.borderColor = "#d0d5dd")}
+        />
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
           <button onClick={onClose} className="cancel-btn">Cancel</button>
           <button
@@ -77,11 +84,13 @@ function RejectModal({ claim, onClose, onConfirm, isPending }) {
   );
 }
 
-// ===== View Claim Modal =====
+// ===== View Modal =====
 function ViewModal({ claim, onClose, onApprove, onReject, reviewing }) {
   if (!claim) return null;
   const rate = Number(claim.employee?.hourly_rate || 0);
-  const { normal, overtime, holiday, total } = calcClaimEarnings(claim, rate);
+  const { normal, overtime, holiday, total } = calcClaimEarnings(
+    claim, rate, claim.shift ?? null
+  );
 
   return (
     <div style={{
@@ -103,7 +112,7 @@ function ViewModal({ claim, onClose, onApprove, onReject, reviewing }) {
         }}>
           <div>
             <h3 style={{ margin: 0, fontSize: 16 }}>
-              Claim #{String(claim.claim_id).padStart(4, "0")}
+              Claim #CLM{String(claim.claim_id).padStart(4, "0")}
             </h3>
             <p style={{ margin: "3px 0 0", fontSize: 12, opacity: 0.85 }}>
               {claim.employee?.name} · {claim.claim_date}
@@ -114,83 +123,62 @@ function ViewModal({ claim, onClose, onApprove, onReject, reviewing }) {
             <button onClick={onClose} style={{
               background: "rgba(255,255,255,0.2)", border: "none",
               color: "white", width: 28, height: 28,
-              borderRadius: "50%", cursor: "pointer",
-              fontSize: 16, display: "flex",
-              alignItems: "center", justifyContent: "center",
+              borderRadius: "50%", cursor: "pointer", fontSize: 16,
+              display: "flex", alignItems: "center", justifyContent: "center",
             }}>✕</button>
           </div>
         </div>
 
         <div style={{ padding: "20px 24px" }}>
-
           {/* Employee info */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
-            {[
-              { label: "Employee", value: claim.employee?.name },
-              { label: "Team", value: claim.employee?.team?.team_name || "—" },
-              { label: "Email", value: claim.employee?.email },
-              { label: "Hourly Rate", value: `R${Number(claim.employee?.hourly_rate || 0).toFixed(2)}/hr` },
-            ].map(({ label, value }) => (
-              <div key={label} style={{ background: "#f4f8fd", borderRadius: 8, padding: "10px 12px" }}>
-                <div style={{ fontSize: 11, color: "#667085", marginBottom: 3 }}>{label}</div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#1d2939" }}>{value}</div>
-              </div>
-            ))}
+            <DetailCell label="Employee"    value={claim.employee?.name} />
+            <DetailCell label="Team"        value={claim.employee?.team?.team_name || "—"} />
+            <DetailCell label="Email"       value={claim.employee?.email} />
+            <DetailCell label="Hourly Rate" value={`R${Number(claim.employee?.hourly_rate || 0).toFixed(2)}/hr`} />
           </div>
 
           {/* Claim details */}
-          <div style={{ marginBottom: 16 }}>
-            <p style={{ fontSize: 11, color: "#667085", fontWeight: 700, textTransform: "uppercase", marginBottom: 10 }}>
-              Claim Details
-            </p>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              {[
-                { label: "Shift Type", value: claim.shift_type },
-                { label: "Claim Date", value: claim.claim_date },
-                { label: "Hours Worked", value: `${claim.hours_worked}h` },
-                { label: "Overtime Hours", value: `${claim.overtime_hours}h` },
-                { label: "Public Holiday", value: claim.is_holiday ? "Yes 🌟" : "No" },
-                { label: "Submitted", value: claim.created_at?.slice(0, 10) || "—" },
-              ].map(({ label, value }) => (
-                <div key={label} style={{ background: "#f4f8fd", borderRadius: 8, padding: "10px 12px" }}>
-                  <div style={{ fontSize: 11, color: "#667085", marginBottom: 3 }}>{label}</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#1d2939" }}>{value}</div>
-                </div>
-              ))}
-            </div>
+          <p style={{ fontSize: 11, color: "#667085", fontWeight: 700, textTransform: "uppercase", marginBottom: 10 }}>
+            Claim Details
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+            <DetailCell label="Shift Type"     value={claim.shift_type} />
+            <DetailCell label="Claim Date"     value={claim.claim_date} />
+            <DetailCell label="Hours Worked"   value={`${claim.hours_worked}h`} />
+            <DetailCell label="Overtime Hours" value={`${claim.overtime_hours}h`} />
+            <DetailCell label="Public Holiday" value={claim.is_holiday ? "Yes 🌟" : "No"} />
+            <DetailCell label="Submitted"      value={claim.created_at?.slice(0, 10) || "—"} />
           </div>
 
           {/* Earnings */}
-          <div style={{ marginBottom: 16 }}>
-            <p style={{ fontSize: 11, color: "#667085", fontWeight: 700, textTransform: "uppercase", marginBottom: 10 }}>
-              Earnings Breakdown
-            </p>
-            <div style={{ border: "1px solid #e6edf5", borderRadius: 8, overflow: "hidden" }}>
-              {[
-                { label: "Normal Pay", value: formatZAR(normal) },
-                { label: "Overtime Pay (×1.5)", value: formatZAR(overtime) },
-                { label: "Holiday Pay", value: formatZAR(holiday) },
-              ].map(({ label, value }) => (
-                <div key={label} style={{
-                  display: "flex", justifyContent: "space-between",
-                  padding: "10px 14px", borderBottom: "1px solid #edf2f7", fontSize: 13,
-                }}>
-                  <span style={{ color: "#667085" }}>{label}</span>
-                  <span style={{ color: "#344054", fontWeight: 700 }}>{value}</span>
-                </div>
-              ))}
-              <div style={{
+          <p style={{ fontSize: 11, color: "#667085", fontWeight: 700, textTransform: "uppercase", marginBottom: 10 }}>
+            Earnings Breakdown
+          </p>
+          <div style={{ border: "1px solid #e6edf5", borderRadius: 8, overflow: "hidden", marginBottom: 16 }}>
+            {[
+              { label: "Normal Pay",          value: formatZAR(normal) },
+              { label: "Overtime Pay (×1.5)", value: formatZAR(overtime) },
+              { label: "Holiday Pay",         value: formatZAR(holiday) },
+            ].map(({ label, value }) => (
+              <div key={label} style={{
                 display: "flex", justifyContent: "space-between",
-                padding: "12px 14px", background: "#eaf4ff",
-                fontSize: 14, fontWeight: 800,
+                padding: "10px 14px", borderBottom: "1px solid #edf2f7", fontSize: 13,
               }}>
-                <span style={{ color: "#005bbb" }}>Total Payable</span>
-                <span style={{ color: "#005bbb" }}>{formatZAR(total)}</span>
+                <span style={{ color: "#667085" }}>{label}</span>
+                <span style={{ color: "#344054", fontWeight: 700 }}>{value}</span>
               </div>
+            ))}
+            <div style={{
+              display: "flex", justifyContent: "space-between",
+              padding: "12px 14px", background: "#eaf4ff",
+              fontSize: 14, fontWeight: 800,
+            }}>
+              <span style={{ color: "#005bbb" }}>Total Payable</span>
+              <span style={{ color: "#005bbb" }}>{formatZAR(total)}</span>
             </div>
           </div>
 
-          {/* Description */}
           {claim.description && (
             <div style={{ marginBottom: 16 }}>
               <p style={{ fontSize: 11, color: "#667085", fontWeight: 700, textTransform: "uppercase", marginBottom: 6 }}>
@@ -202,7 +190,6 @@ function ViewModal({ claim, onClose, onApprove, onReject, reviewing }) {
             </div>
           )}
 
-          {/* Approval notes */}
           {claim.approval?.notes && (
             <div style={{ marginBottom: 16 }}>
               <p style={{ fontSize: 11, color: "#667085", fontWeight: 700, textTransform: "uppercase", marginBottom: 6 }}>
@@ -214,7 +201,6 @@ function ViewModal({ claim, onClose, onApprove, onReject, reviewing }) {
             </div>
           )}
 
-          {/* Actions */}
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, paddingTop: 16, borderTop: "1px solid #e6edf5" }}>
             <button onClick={onClose} className="cancel-btn">Close</button>
             {claim.status === "Pending" && (
@@ -251,34 +237,39 @@ const TABS = ["Pending", "Approved", "Rejected"];
 
 function AdminClaims() {
   const qc = useQueryClient();
-  const [activeTab, setActiveTab] = useState("Pending");
-  const [search, setSearch] = useState("");
-  const [viewClaim, setViewClaim] = useState(null);
-  const [rejectClaim, setRejectClaim] = useState(null);
-  const [successMsg, setSuccessMsg] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
+
+  const [activeTab,      setActiveTab]      = useState("Pending");
+  const [search,         setSearch]         = useState("");
+  const [viewClaim,      setViewClaim]      = useState(null);
+  const [rejectClaim,    setRejectClaim]    = useState(null);
   const [claimToApprove, setClaimToApprove] = useState(null);
+  const [successMsg,     setSuccessMsg]     = useState("");
+  const [errorMsg,       setErrorMsg]       = useState("");
 
   const showSuccess = (msg) => {
     setSuccessMsg(msg);
     setTimeout(() => setSuccessMsg(""), 3000);
   };
+  const showError = (msg) => {
+    setErrorMsg(msg);
+    setTimeout(() => setErrorMsg(""), 4000);
+  };
 
-  // ===== Fetch all claims (no status filter — tabs handle it client-side) =====
+  // ===== Fetch all claims =====
   const { data: allClaims, isLoading } = useQuery({
     queryKey: QUERY_KEYS.CLAIMS({}),
-    queryFn: () => claimApi.getAll({}),
-    select: (d) => d.data,
+    queryFn:  () => claimApi.getAll({}),
+    select:   (d) => d.data,
   });
 
   // ===== Tab counts =====
   const counts = {
-    Pending: allClaims?.filter((c) => c.status === "Pending").length || 0,
+    Pending:  allClaims?.filter((c) => c.status === "Pending").length  || 0,
     Approved: allClaims?.filter((c) => c.status === "Approved").length || 0,
     Rejected: allClaims?.filter((c) => c.status === "Rejected").length || 0,
   };
 
-  // ===== Filter by tab + search =====
+  // ===== Filter =====
   const filtered = (allClaims || [])
     .filter((c) => c.status === activeTab)
     .filter((c) => {
@@ -291,65 +282,56 @@ function AdminClaims() {
       );
     });
 
-  const { currentPage, setCurrentPage, totalPages,
-    paginatedData, pageSize,
-  } = usePagination(filtered, 5);
+  // ===== Pagination — reset on tab or search change =====
+  const { currentPage, setCurrentPage, resetPage, totalPages,
+    paginatedData, startIndex, endIndex } = usePagination(filtered, PAGE_SIZE);
 
-  // ===== Review mutation (approve or reject) =====
-  const reviewClaim = useMutation({
-    mutationFn: ({ id, status, notes }) =>
-      claimApi.review ? claimApi.review(id, { status, notes })
-        : fetch(`/api/claims/${id}/status`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ status, notes }),
-        }).then((r) => r.json()),
+  // useEffect(() => { resetPage(); }, [activeTab, search]);
+
+  // ===== Review mutation =====
+  const reviewMutation = useMutation({
+    mutationFn: ({ id, status, notes }) => claimApi.review(id, { status, notes }),
     onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: ["claims"] });
       setViewClaim(null);
       setRejectClaim(null);
+      setClaimToApprove(null);
       showSuccess(`Claim ${variables.status.toLowerCase()} successfully.`);
     },
-    onError: (err) => {
-      setErrorMsg(err.message || "Action failed. Please try again.");
-      setTimeout(() => setErrorMsg(""), 4000);
-    },
+    onError: (err) => showError(err.message || "Action failed. Please try again."),
   });
 
-  const handleApprove = (claim) => {
-    setClaimToApprove(claim);
-  };
-
-  const confirmApprove = () => {
-    setClaimToApprove(null);
-    reviewClaim.mutate(
-      {
-        id: claimToApprove.claim_id,
-        status: "Approved",
-        notes: "Claim approved.",
-      },
-      {
-        onSuccess: () => {
-          setClaimToApprove(null);
-        },
-      }
-    );
-  };
-
-  const handleRejectConfirm = (notes) => {
-    reviewClaim.mutate({ id: rejectClaim.claim_id, status: "Rejected", notes });
-  };
-
-  // ===== Reset claim to pending =====
-  const resetClaim = useMutation({
+  // ===== Reset mutation =====
+  const resetMutation = useMutation({
     mutationFn: (id) => claimApi.reset(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["claims"] });
       showSuccess("Claim reset to Pending.");
     },
-    onError: (err) => setErrorMsg(err.message),
+    onError: (err) => showError(err.message),
   });
+
+  // ===== Handlers =====
+  const handleApprove = (claim) => {
+    setViewClaim(null);
+    setClaimToApprove(claim);
+  };
+
+  const confirmApprove = () => {
+    reviewMutation.mutate({
+      id:     claimToApprove.claim_id,
+      status: "Approved",
+      notes:  "Claim approved.",
+    });
+  };
+
+  const handleRejectConfirm = (notes) => {
+    reviewMutation.mutate({
+      id:     rejectClaim.claim_id,
+      status: "Rejected",
+      notes,
+    });
+  };
 
   return (
     <Layout>
@@ -420,8 +402,9 @@ function AdminClaims() {
 
               <tbody>
                 {paginatedData.map((claim) => {
-                  const rate = Number(claim.employee?.hourly_rate || 0);
-                  const { total } = calcClaimEarnings(claim, rate);
+                  const rate  = Number(claim.employee?.hourly_rate || 0);
+                  const { total } = calcClaimEarnings(claim, rate, claim.shift ?? null);
+                  const hasOT = Number(claim.overtime_hours) > 0;
 
                   return (
                     <tr key={claim.claim_id}>
@@ -429,49 +412,33 @@ function AdminClaims() {
                         #CLM{String(claim.claim_id).padStart(4, "0")}
                       </td>
                       <td>
-                        <div>
-                          <strong style={{ color: "#1d2939", fontSize: 13 }}>
-                            {claim.employee?.name}
-                          </strong>
-                          <div style={{ fontSize: 11, color: "#667085" }}>
-                            {claim.employee?.team?.team_name || "—"}
-                          </div>
+                        <strong style={{ color: "#1d2939", fontSize: 13 }}>
+                          {claim.employee?.name}
+                        </strong>
+                        <div style={{ fontSize: 11, color: "#667085" }}>
+                          {claim.employee?.team?.team_name || "—"}
                         </div>
                       </td>
-                      <td style={{ color: "#344054", fontSize: 13 }}>
-                        {claim.claim_date}
-                      </td>
-                      <td style={{ color: "#344054", fontSize: 13 }}>
-                        {claim.shift_type}
-                      </td>
-                      <td style={{ color: "#344054", fontSize: 13 }}>
-                        {claim.hours_worked}h
-                      </td>
+                      <td style={{ color: "#344054", fontSize: 13 }}>{claim.claim_date}</td>
+                      <td style={{ color: "#344054", fontSize: 13 }}>{claim.shift_type}</td>
+                      <td style={{ color: "#344054", fontSize: 13 }}>{claim.hours_worked}h</td>
                       <td style={{
-                        color: Number(claim.overtime_hours) > 0 ? "#b54708" : "#667085",
-                        fontWeight: Number(claim.overtime_hours) > 0 ? 700 : 400,
-                        fontSize: 13,
+                        color: hasOT ? "#b54708" : "#667085",
+                        fontWeight: hasOT ? 700 : 400, fontSize: 13,
                       }}>
                         {claim.overtime_hours}h
                       </td>
                       <td>
-                        {claim.is_holiday ? (
-                          <span style={{ color: "#7a3aed", fontWeight: 700, fontSize: 12 }}>
-                            🌟 Yes
-                          </span>
-                        ) : (
-                          <span style={{ color: "#667085", fontSize: 13 }}>No</span>
-                        )}
+                        {claim.is_holiday
+                          ? <span style={{ color: "#7a3aed", fontWeight: 700, fontSize: 12 }}>🌟 Yes</span>
+                          : <span style={{ color: "#667085", fontSize: 13 }}>No</span>}
                       </td>
                       <td style={{ color: "#006fd6", fontWeight: 700, fontSize: 13 }}>
                         {formatZAR(total)}
                       </td>
-                      <td>
-                        <StatusBadge status={claim.status} />
-                      </td>
+                      <td><StatusBadge status={claim.status} /></td>
                       <td>
                         <div className="approval-actions">
-                          {/* View */}
                           <button
                             title="View details"
                             onClick={() => setViewClaim(claim)}
@@ -479,51 +446,37 @@ function AdminClaims() {
                               background: "#eaf4ff", color: "#006fd6",
                               border: "none", borderRadius: 6,
                               width: 28, height: 28, cursor: "pointer",
-                              fontWeight: 700, fontSize: 13,
+                              fontSize: 14,
                             }}
-                          >
-                            👁
-                          </button>
+                          >👁</button>
 
-                          {/* Approve — Pending only */}
-                          {claim.status === "Pending" && (
+                          {claim.status === "Pending" && (<>
                             <button
                               className="approve-btn"
                               title="Approve"
                               onClick={() => handleApprove(claim)}
-                              disabled={reviewClaim.isPending}
-                            >
-                              ✓
-                            </button>
-                          )}
-
-                          {/* Reject — Pending only */}
-                          {claim.status === "Pending" && (
+                              disabled={reviewMutation.isPending}
+                            >✓</button>
                             <button
                               className="reject-btn"
                               title="Reject"
                               onClick={() => { setRejectClaim(claim); setViewClaim(null); }}
-                              disabled={reviewClaim.isPending}
-                            >
-                              ✕
-                            </button>
-                          )}
+                              disabled={reviewMutation.isPending}
+                            >✕</button>
+                          </>)}
 
-                          {/* Reset — Rejected only */}
                           {claim.status === "Rejected" && (
                             <button
                               title="Reset to Pending"
-                              onClick={() => resetClaim.mutate(claim.claim_id)}
-                              disabled={resetClaim.isPending}
+                              onClick={() => resetMutation.mutate(claim.claim_id)}
+                              disabled={resetMutation.isPending}
                               style={{
                                 background: "#fff3e5", color: "#b54708",
                                 border: "none", borderRadius: 6,
                                 width: 28, height: 28, cursor: "pointer",
-                                fontWeight: 700, fontSize: 13,
+                                fontWeight: 700, fontSize: 14,
                               }}
-                            >
-                              ↺
-                            </button>
+                            >↺</button>
                           )}
                         </div>
                       </td>
@@ -544,17 +497,17 @@ function AdminClaims() {
             </table>
           )}
 
-          <div className="flex items-center justify-between mt-4 border-t border-slate-200 pt-4">
-            <p className="roster-note">
-              Showing{" "}
-              {filtered.length
-                ? (currentPage - 1) * pageSize + 1
-                : 0}
-              -
-              {Math.min(currentPage * pageSize, filtered.length)} of{" "}
-              {filtered.length} {activeTab.toLowerCase()} claims
+          {/* ===== Footer: count + pagination ===== */}
+          <div style={{
+            display: "flex", justifyContent: "space-between",
+            alignItems: "center", marginTop: 16,
+            borderTop: "1px solid #edf2f7", paddingTop: 12,
+          }}>
+            <p className="roster-note" style={{ margin: 0 }}>
+              {filtered.length === 0
+                ? `No ${activeTab.toLowerCase()} claims`
+                : `Showing ${startIndex}–${endIndex} of ${filtered.length} ${activeTab.toLowerCase()} claims`}
             </p>
-
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
@@ -563,39 +516,37 @@ function AdminClaims() {
           </div>
         </div>
 
-        {/* ===== View Modal ===== */}
+        {/* ===== Modals ===== */}
         {viewClaim && (
           <ViewModal
             claim={viewClaim}
             onClose={() => setViewClaim(null)}
-            onApprove={(c) => { setViewClaim(null); handleApprove(c); }}
+            onApprove={handleApprove}
             onReject={(c) => { setViewClaim(null); setRejectClaim(c); }}
-            reviewing={reviewClaim.isPending}
+            reviewing={reviewMutation.isPending}
           />
         )}
 
-        {/* ===== Reject Modal ===== */}
         {rejectClaim && (
           <RejectModal
             claim={rejectClaim}
             onClose={() => setRejectClaim(null)}
             onConfirm={handleRejectConfirm}
-            isPending={reviewClaim.isPending}
+            isPending={reviewMutation.isPending}
           />
         )}
 
         {claimToApprove && (
           <ConfirmationModal
             title="Approve Claim"
-            message={`Approve claim #CLM${String(claimToApprove.claim_id).padStart(4, "0")} for ${claimToApprove.employee?.name}?`}
+            message={`Approve claim #CLM${String(claimToApprove.claim_id).padStart(4, "0")} for ${claimToApprove.employee?.name}? This cannot be undone.`}
             confirmText="Approve"
             confirmColor="#16a34a"
-            isPending={reviewClaim.isPending}
+            isPending={reviewMutation.isPending}
             onConfirm={confirmApprove}
             onClose={() => setClaimToApprove(null)}
           />
         )}
-
       </section>
     </Layout>
   );

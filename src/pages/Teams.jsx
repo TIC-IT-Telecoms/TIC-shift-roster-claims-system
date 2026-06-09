@@ -8,6 +8,7 @@ import { QUERY_KEYS } from "../utils/queryKeys";
 import Pagination from "../components/Pagination";
 import usePagination from "../hooks/usePagination";
 import AddTeam from "./AddTeam";
+import ConfirmationModal from "../components/ui/ConfirmationModal";
 
 function Teams() {
   const location = useLocation();
@@ -18,7 +19,8 @@ function Teams() {
   const [editTeam, setEditTeam] = useState(null);
   const [viewTeam, setViewTeam] = useState(null);
   const [successMsg, setSuccessMsg] = useState(location.state?.success || "");
-
+  const [deleteTeams, setDeleteTeams] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   // Clear location state after reading
   useEffect(() => {
     if (location.state?.success) {
@@ -60,8 +62,17 @@ function Teams() {
   });
 
   const handleDelete = (team) => {
-    if (!confirm(`Delete "${team.team_name}"? Employees will be unassigned.`)) return;
-    deleteTeam.mutate(team.team_id);
+    setDeleteTeams(team);
+  };
+
+  const confirmDelete = () => {
+    if (!deleteTeams) return;
+
+    deleteTeam.mutate(deleteTeams.team_id, {
+      onSuccess: () => {
+        setDeleteTeams(null);
+      },
+    });
   };
 
   // ===== Modal handlers =====
@@ -86,7 +97,7 @@ function Teams() {
     totalPages,
     paginatedData,
     pageSize,
-  } = usePagination(filtered, 4);
+  } = usePagination(filtered, 5);
 
   // ===== Derive team lead from employees =====
   // Team lead = first admin/supervisor in the team, fallback to first member
@@ -384,6 +395,18 @@ function Teams() {
             employees={employees}
             onClose={closeModal}
             onSuccess={handleModalSuccess}
+          />
+        )}
+
+        {deleteTeams && (
+          <ConfirmationModal
+            title="⚠️ Delete Team"
+            message={`Delete "${deleteTeams.team_name}"? Employees will be unassigned.`}
+            confirmText="Delete"
+            confirmColor="#dc2626"
+            isPending={deleteTeam.isPending}
+            onConfirm={confirmDelete}
+            onClose={() => setDeleteTeams(null)}
           />
         )}
 
