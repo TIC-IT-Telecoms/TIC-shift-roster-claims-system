@@ -1,4 +1,3 @@
-// src/pages/MyRoster.jsx
 import { useState } from "react";
 import Layout from "../components/Layout";
 import { useQuery } from "@tanstack/react-query";

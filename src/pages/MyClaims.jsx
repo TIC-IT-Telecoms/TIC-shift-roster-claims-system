@@ -48,7 +48,7 @@ function ClaimModal({ claim, onClose, hourlyRate }) {
       <div style={{
         background: "white", borderRadius: 16,
         width: "100%", maxWidth: 480,
-        maxHeight: "92vh", overflowY: "auto",
+        maxHeight: "85vh", overflowY: "auto",
         boxShadow: "0 10px 40px rgba(0,95,180,0.2)",
         overflow: "hidden",
       }}>

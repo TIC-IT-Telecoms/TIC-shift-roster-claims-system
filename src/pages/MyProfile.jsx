@@ -257,10 +257,6 @@ function MyProfile() {
               <strong>{formatDate(emp?.created_at)}</strong>
             </InfoItem>
 
-            <InfoItem label="Member Since">
-              <strong>{formatDate(user?.created_at)}</strong>
-            </InfoItem>
-
             <InfoItem label="Supervisor">
               <strong>{formatSupervisor(supervisor)}</strong>
             </InfoItem>

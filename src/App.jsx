@@ -4,6 +4,9 @@ import { useAuthStore } from "./store/authStore";
 
 // Auth
 import Login from "./pages/Login";
+import ForgotPassword from "./pages/ForgotPassword";
+// import ResetPassword from "./pages/ResetPassword";
+// import LoginOtp from "./pages/LoginOtp";
 
 // Employee pages
 import Dashboard from "./pages/Dashboard";
@@ -74,6 +77,7 @@ function App() {
           {/* ===== PUBLIC ===== */}
           <Route path="/" element={<RootRedirect />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
 
           {/* ===== EMPLOYEE ROUTES ===== */}
           <Route path="/dashboard" element={

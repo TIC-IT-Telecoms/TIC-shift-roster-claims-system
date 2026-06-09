@@ -313,6 +313,8 @@ function RotationCycles() {
   const [viewCycle, setViewCycle] = useState(null);
   const [editCycle, setEditCycle] = useState(null);
   const [successMsg, setSuccessMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [deleteCycles, setDeleteCycles] = useState(null);
 
   const { data: cycles, isLoading } = useQuery({
     queryKey: QUERY_KEYS.ROTATIONS,
@@ -337,18 +339,26 @@ function RotationCycles() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: QUERY_KEYS.ROTATIONS });
       setSuccessMsg("Rotation cycle deleted.");
+      
       setTimeout(() => setSuccessMsg(""), 3000);
     },
-    onError: (err) => alert(err.message),
+    onError: (err) => {setErrorMsg(err.message);
+    setDeleteCycles(null);
+      setTimeout(() => setErrorMsg(""), 6000);
+    }
   });
 
   const handleDelete = (cycle) => {
-    if (cycle.details?.length > 0) {
-      if (!window.confirm(`This cycle has ${cycle.details.length} day assignments. Are you sure you want to delete it?`)) {
-        return;
+   setDeleteCycles(cycle);
+  };
+
+  const confirmDelete = () => {
+    if (!deleteCycles) return;
+
+    deleteCycle.mutate(deleteCycles.rotation_id,{
+      onSuccess: () => { setDeleteCycles(null);
       }
-    }
-    deleteCycle.mutate(cycle.rotation_id);
+    });
   };
 
   const handleModalSuccess = (msg) => {
@@ -384,6 +394,11 @@ function RotationCycles() {
         {successMsg && (
           <div style={{ background: "#e8f8ef", border: "1px solid #bbf7d0", color: "#157347", padding: "10px 16px", borderRadius: 8, marginBottom: 16, fontSize: 13 }}>
             ✓ {successMsg}
+          </div>
+        )}
+        {errorMsg && (
+          <div style={{ background: "#FF000026", border: "1px solid #fee2e2", color: "#FF0000", padding: "10px 16px", borderRadius: 8, marginBottom: 16, fontSize: 13 }}>
+            ❌ {errorMsg}
           </div>
         )}
 
@@ -518,6 +533,17 @@ function RotationCycles() {
             cycle={viewCycle}
             onClose={() => setViewCycle(null)}
             onEdit={(c) => { setEditCycle(c); setShowModal(true); }}
+          />
+        )}
+        {/* ===== Delete Confirmation Modal ===== */}
+        {deleteCycles && (
+          <ConfirmationModal
+            title="Confirm Deletion"
+            message={`Are you sure you want to delete the cycle "${deleteCycles.cycle_name}"? This action cannot be undone.`}
+            onConfirm={confirmDelete}
+            onClose={() => setDeleteCycles(null)}
+            confirmText="Yes, Delete"
+            cancelText="Cancel"
           />
         )}
       </section>

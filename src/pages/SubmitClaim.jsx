@@ -1,4 +1,3 @@
-// src/pages/SubmitClaim.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
@@ -14,7 +13,7 @@ import {
   calcClaimEarnings,
 } from "../utils/helpers";
 
-const todayStr   = getTodayStr();
+const todayStr = getTodayStr();
 const monthStart = getMonthStart();
 
 const SHIFT_TYPES = ["Early Shift", "Night Shift", "Grave Shift"];
@@ -22,7 +21,7 @@ const SHIFT_TYPES = ["Early Shift", "Night Shift", "Grave Shift"];
 // ===== Status Badge =====
 const StatusBadge = ({ status }) => {
   const map = {
-    Pending:  "status-pending",
+    Pending: "status-pending",
     Approved: "status-approved",
     Rejected: "status-rejected",
   };
@@ -31,7 +30,7 @@ const StatusBadge = ({ status }) => {
 
 // ===== Holiday detection via API =====
 const checkHolidayApi = async (dateStr) => {
-  const res  = await fetch(`/api/holidays/check/${dateStr}`, { credentials: "include" });
+  const res = await fetch(`/api/holidays/check/${dateStr}`, { credentials: "include" });
   const json = await res.json();
   return json?.data?.is_holiday ? json.data.holiday : null;
 };
@@ -45,28 +44,28 @@ const getNextDay = (dateStr) => {
 
 function SubmitClaim() {
   const navigate = useNavigate();
-  const qc       = useQueryClient();
+  const qc = useQueryClient();
 
   const [form, setForm] = useState({
-    claim_date:     todayStr,
-    shift_type:     "",
-    hours_worked:   8,
+    claim_date: todayStr,
+    shift_type: "",
+    hours_worked: 8,
     overtime_hours: 0,
-    description:    "",
+    description: "",
   });
 
-  const [rosterEntry,       setRosterEntry]       = useState(null);
-  const [holidayInfo,       setHolidayInfo]       = useState(null);   // today's holiday
-  const [nextDayHoliday,    setNextDayHoliday]    = useState(null);   // tomorrow's holiday (grave shifts)
-  const [checkingDate,      setCheckingDate]      = useState(false);
-  const [error,             setError]             = useState("");
-  const [success,           setSuccess]           = useState("");
+  const [rosterEntry, setRosterEntry] = useState(null);
+  const [holidayInfo, setHolidayInfo] = useState(null);
+  const [nextDayHoliday, setNextDayHoliday] = useState(null);
+  const [checkingDate, setCheckingDate] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   // ===== Fetch profile for hourly rate =====
   const { data: profile } = useQuery({
     queryKey: QUERY_KEYS.PROFILE,
-    queryFn:  profileApi.getProfile,
-    select:   (d) => d.data,
+    queryFn: profileApi.getProfile,
+    select: (d) => d.data,
   });
 
   const hourlyRate = Number(profile?.employee?.hourly_rate || 0);
@@ -74,8 +73,8 @@ function SubmitClaim() {
   // ===== Fetch recent claims =====
   const { data: recentClaims } = useQuery({
     queryKey: QUERY_KEYS.MY_CLAIMS({ start_date: monthStart, end_date: todayStr }),
-    queryFn:  () => claimApi.getMyClaims({ start_date: monthStart, end_date: todayStr }),
-    select:   (d) => d.data?.slice(0, 5),
+    queryFn: () => claimApi.getMyClaims({ start_date: monthStart, end_date: todayStr }),
+    select: (d) => d.data?.slice(0, 5),
   });
 
   // ===== When date changes: fetch roster + holiday (+ next day for grave) =====
@@ -93,10 +92,10 @@ function SubmitClaim() {
         // 1. Roster for this date
         const rosterRes = await rosterApi.getMyRoster({
           start_date: form.claim_date,
-          end_date:   form.claim_date,
+          end_date: form.claim_date,
         });
 
-        const raw   = rosterRes?.data?.roster || [];
+        const raw = rosterRes?.data?.roster || [];
         const entry = Array.isArray(raw)
           ? raw[0]
           : Object.values(raw).flat()[0];
@@ -114,12 +113,14 @@ function SubmitClaim() {
 
         // 3. For grave shifts also check next day
         if (entry?.shift?.is_grave) {
-          const nextDay    = getNextDay(form.claim_date);
+          const nextDay = getNextDay(form.claim_date);
           const nextDayHol = await checkHolidayApi(nextDay);
           setNextDayHoliday(nextDayHol);
         }
-      } catch {
-        // Silent fail — user can still fill manually
+      } catch (err) {
+        setCheckingDate(false);
+        setError("Failed to fetch roster or holiday info for this date.");
+        console.error(err);
       } finally {
         setCheckingDate(false);
       }
@@ -133,7 +134,8 @@ function SubmitClaim() {
     mutationFn: claimApi.submit,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["claims"] });
-      setSuccess("Claim submitted successfully! Redirecting...");
+      qc.invalidateQueries({ queryKey: QUERY_KEYS.NOTIFICATIONS });
+      setSuccess("Claim submitted successfully!");
       window.scrollTo({ top: 0, behavior: "smooth" });
       setTimeout(() => navigate("/claims"), 1500);
     },
@@ -155,11 +157,11 @@ function SubmitClaim() {
     }
 
     submitMutation.mutate({
-      claim_date:     form.claim_date,
-      shift_type:     form.shift_type,
-      hours_worked:   Number(form.hours_worked),
+      claim_date: form.claim_date,
+      shift_type: form.shift_type,
+      hours_worked: Number(form.hours_worked),
       overtime_hours: Number(form.overtime_hours || 0),
-      description:    form.description.trim() || null,
+      description: form.description.trim() || null,
     });
   };
 
@@ -167,9 +169,9 @@ function SubmitClaim() {
   // Passes the shift and next-day holiday flag so calcClaimEarnings
   // can apply the grave-shift midnight split correctly
   const previewClaim = {
-    hours_worked:   Number(form.hours_worked  || 0),
+    hours_worked: Number(form.hours_worked || 0),
     overtime_hours: Number(form.overtime_hours || 0),
-    is_holiday:     !!(holidayInfo || nextDayHoliday),
+    is_holiday: !!(holidayInfo || nextDayHoliday),
   };
   const { normal, overtime, holiday, total } = calcClaimEarnings(
     previewClaim,
@@ -178,9 +180,9 @@ function SubmitClaim() {
     !!nextDayHoliday                 // is next day a holiday?
   );
 
-  const isOff       = rosterEntry?.status === "Off";
+  const isOff = rosterEntry?.status === "Off";
   const rosterShift = rosterEntry?.shift?.shift_name;
-  const isGrave     = rosterEntry?.shift?.is_grave;
+  const isGrave = rosterEntry?.shift?.is_grave;
 
   return (
     <Layout>
@@ -226,7 +228,7 @@ function SubmitClaim() {
                 background: "#e8f8ef", border: "1px solid #bbf7d0",
                 color: "#157347", fontSize: 13, fontWeight: 700,
               }}>
-                ✓ Roster match: {rosterShift} · {rosterEntry.shift?.start_time?.slice(0,5)} – {rosterEntry.shift?.end_time?.slice(0,5)}
+                ✓ Roster match: {rosterShift} · {rosterEntry.shift?.start_time?.slice(0, 5)} – {rosterEntry.shift?.end_time?.slice(0, 5)}
                 {isGrave && " 🌙 (Overnight)"}
               </div>
             )}
@@ -341,9 +343,9 @@ function SubmitClaim() {
                 }}>
                   {checkingDate ? "Checking..." : (
                     holidayInfo && nextDayHoliday ? `🌟 Both today (${holidayInfo.holiday_name}) and tomorrow (${nextDayHoliday.holiday_name}) are public holidays` :
-                    holidayInfo      ? `🌟 Yes — ${holidayInfo.holiday_name}` :
-                    nextDayHoliday   ? `🌟 Next day is a holiday — ${nextDayHoliday.holiday_name}` :
-                    "No — auto-detected from system"
+                      holidayInfo ? `🌟 Yes — ${holidayInfo.holiday_name}` :
+                        nextDayHoliday ? `🌟 Next day is a holiday — ${nextDayHoliday.holiday_name}` :
+                          "No — auto-detected from system"
                   )}
                 </div>
               </div>
@@ -382,9 +384,9 @@ function SubmitClaim() {
                     )}
                   </div>
                   {[
-                    { label: "Normal Pay",          value: formatZAR(normal) },
+                    { label: "Normal Pay", value: formatZAR(normal) },
                     { label: "Overtime Pay (×1.5)", value: formatZAR(overtime) },
-                    { label: "Holiday Pay",         value: formatZAR(holiday) },
+                    { label: "Holiday Pay", value: formatZAR(holiday) },
                   ].map(({ label, value }) => (
                     <div key={label} style={{
                       display: "flex", justifyContent: "space-between",

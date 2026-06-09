@@ -354,9 +354,9 @@ function AdminRosters() {
   const teamRosterMap = buildTeamRosterMap(rosterData);
   const teamNames     = Object.keys(teamRosterMap).sort();
 
-  const allEntries = rosterData?.roster
-    ? Object.values(rosterData.roster).flat()
-    : [];
+  // const allEntries = rosterData?.roster
+  //   ? Object.values(rosterData.roster).flat()
+  //   : [];
 
   // const stats = [
   //   { label: `${allEntries.filter((r) => r.status === "Scheduled").length} Scheduled`, bg: "#eaf4ff", color: "#006fd6" },

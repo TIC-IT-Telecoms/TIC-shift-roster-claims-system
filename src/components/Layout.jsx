@@ -1,19 +1,29 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
+import useNotifications from "../hooks/useNotifications";
 
 function Layout({ children }) {
   const { user } = useAuthStore();
   const role = user?.user?.user?.role || "Employee";
 
-const getInitials = (name) => {
-  if (!name) return "??";
-  return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
-};
+  const getInitials = (name) => {
+    if (!name) return "??";
+    return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+  };
 
   const handleLogout = () => {
     useAuthStore.getState().clearAuth();
     window.location.href = "/";
   };
+
+  const navigate = useNavigate();
+  const isAuth = useAuthStore((s) => s.isAuth);
+
+  const { unreadCount } = useNotifications({
+    limit: 1,
+    unreadOnly: true,
+    enabled: isAuth,
+  });
 
   return (
     <div className="app-shell">
@@ -77,7 +87,35 @@ const getInitials = (name) => {
           </div>
 
           <div className="top-actions">
-            <div className="bell">🔔<span>0</span></div>
+
+            <div
+              className="bell"
+              onClick={() => navigate("/notifications")}
+              style={{ cursor: "pointer", position: "relative" }}
+              title="Notifications"
+            >
+              🔔
+              {unreadCount > 0 && (
+                <span style={{ position: "absolute",
+                  top: -4,
+                  right: -4,
+                  minWidth: 16,
+                  height: 16,
+                  borderRadius: 999,
+                  background: "#dc2626",
+                  color: "white",
+                  fontSize: 10,
+                  fontWeight: 800,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "0 4px",
+                  lineHeight: 1,
+                }}>
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </div>
             <div className="avatar">{getInitials(user?.user?.name)}</div>
             <div className="user-info">
               <strong>{user?.user?.name}</strong>
