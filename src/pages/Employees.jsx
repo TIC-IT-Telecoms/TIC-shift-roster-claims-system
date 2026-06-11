@@ -1,4 +1,3 @@
-// src/pages/Employees.jsx
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import Layout from "../components/Layout";
@@ -8,6 +7,9 @@ import { teamApi } from "../api/teamApi";
 import { QUERY_KEYS } from "../utils/queryKeys";
 import { formatEmpId, formatRate } from "../utils/helpers";
 import AddEmployee from "./AddEmployee";
+import usePagination from "../hooks/usePagination";
+import Pagination from "../components/Pagination";
+import ConfirmationModal from "../components/ui/ConfirmationModal";
 
 // ===== Status Badge =====
 const StatusBadge = ({ status }) => (
@@ -26,6 +28,7 @@ function Employees() {
   const [showModal, setShowModal] = useState(false);
   const [editEmployee, setEditEmployee] = useState(null);
   const [successMsg, setSuccessMsg] = useState(location.state?.success || "");
+  const [confirmingEmp, setConfirmingEmp] = useState(null);
 
   // Clear location state success message after reading
   useEffect(() => {
@@ -66,7 +69,7 @@ function Employees() {
     },
     onError: (err) => alert(err.message),
   });
-  
+
   const activate = useMutation({
     mutationFn: employeeApi.activate,
     onSuccess: () => {
@@ -77,14 +80,23 @@ function Employees() {
   });
 
   const handleDeactivate = (emp) => {
-    if (!confirm(`Deactivate ${emp.name}? They will lose system access.`)) return;
-    deactivate.mutate(emp.employee_id);
+    setConfirmingEmp(emp);
   };
 
   const handleActivate = (emp) => {
-    if (!confirm(`Activate ${emp.name}? They will regain system access.`)) return;
-    activate.mutate(emp.employee_id);
+    setConfirmingEmp(emp);
   };
+
+  const confirmDeactivate = () => {
+    deactivate.mutate(confirmingEmp.employee_id);
+    setConfirmingEmp(null);
+  };
+
+  const confirmActivate = () => {
+    activate.mutate(confirmingEmp.employee_id);
+    setConfirmingEmp(null);
+  };
+
 
   // ===== Modal handlers =====
   const openAdd = () => { setEditEmployee(null); setShowModal(true); };
@@ -107,6 +119,14 @@ function Employees() {
     const matchTeam = teamFilter ? String(emp.team_id) === String(teamFilter) : true;
     return matchSearch && matchStatus && matchTeam;
   });
+
+  const {
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    paginatedData,
+    pageSize,
+  } = usePagination(filtered, 6);
 
   return (
     <Layout>
@@ -186,7 +206,7 @@ function Employees() {
               </thead>
 
               <tbody>
-                {filtered.map((emp) => (
+                {paginatedData.map((emp) => (
                   <tr key={emp.employee_id}>
                     <td style={{ color: "#667085", fontSize: 12, fontFamily: "monospace" }}>
                       {formatEmpId(emp.employee_id)}
@@ -254,9 +274,23 @@ function Employees() {
             </table>
           )}
 
-          <p className="roster-note">
-            Showing {filtered.length} of {employees?.length || 0} employees
-          </p>
+          <div className="flex items-center justify-between mt-4 border-t border-slate-200 pt-4">
+            <p className="text-sm text-slate-500">
+              Showing{" "}
+              {filtered.length
+                ? (currentPage - 1) * pageSize + 1
+                : 0}
+              -
+              {Math.min(currentPage * pageSize, filtered.length)} of{" "}
+              {filtered.length} teams
+            </p>
+
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          </div>
         </div>
 
         {/* ===== AddEmployee Modal ===== */}
@@ -267,6 +301,31 @@ function Employees() {
             employees={employees}
             onClose={closeModal}
             onSuccess={handleModalSuccess}
+          />
+        )}
+
+        {/* ===== Confirmation Modal ===== */}
+        {confirmingEmp && (
+          <ConfirmationModal
+            title={`⚠️ ${confirmingEmp.status === "Active" ? "Deactivate" : "Activate"} Employee`}
+            message={`Are you sure you want to ${confirmingEmp.status === "Active" ? "deactivate" : "activate"} "${confirmingEmp.name}"?`}
+            confirmText={confirmingEmp.status === "Active" ? "Deactivate" : "Activate"}
+            confirmColor={confirmingEmp.status === "Active" ? "#dc2626" : "#4caf50"}
+            isPending={deactivate.isPending || activate.isPending}
+            onConfirm={confirmingEmp.status === "Active" ? confirmDeactivate : confirmActivate}
+            onClose={() => setConfirmingEmp(null)}
+          />
+        )}
+        {/* ===== Confirmation Modal ===== */}
+        {confirmingEmp && (
+          <ConfirmationModal
+            title={`⚠️ ${confirmingEmp.status === "Active" ? "Deactivate" : "Activate"} Employee`}
+            message={`Are you sure you want to ${confirmingEmp.status === "Active" ? "deactivate" : "activate"} "${confirmingEmp.name}"?`}
+            confirmText={confirmingEmp.status === "Active" ? "Deactivate" : "Activate"}
+            confirmColor={confirmingEmp.status === "Active" ? "#dc2626" : "#4caf50"}
+            isPending={deactivate.isPending || activate.isPending}
+            onConfirm={confirmingEmp.status === "Active" ? confirmDeactivate : confirmActivate}
+            onClose={() => setConfirmingEmp(null)}
           />
         )}
 

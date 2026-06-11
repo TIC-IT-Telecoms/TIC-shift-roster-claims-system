@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLogin } from '../hooks/useAuth.js';
+import { NavLink } from 'react-router-dom';
 
 const Login = () => {
   const [form, setForm] = useState({ username: '', password: '' });
@@ -167,13 +168,13 @@ const Login = () => {
               Remember me
             </label>
 
-            <a
-              href="#"
+            <NavLink
+              to="/forgot-password"
               className="text-sm font-semibold no-underline"
               style={{ color: '#006bd6' }}
             >
               Forgot Password?
-            </a>
+            </NavLink>
           </div>
 
           {/* Submit */}

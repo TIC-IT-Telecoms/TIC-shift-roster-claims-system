@@ -19,7 +19,7 @@ export const useAllClaims = (params) =>
 export const useSubmitClaim = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: claimApi.submit,
+    mutationFn: claimApi.submitClaim,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['claims'] }),
   });
 };
@@ -27,7 +27,7 @@ export const useSubmitClaim = () => {
 export const useUpdateClaim = (id) => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data) => claimApi.update(id, data),
+    mutationFn: (data) => claimApi.updateClaim(id, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['claims'] }),
   });
 };
@@ -35,7 +35,7 @@ export const useUpdateClaim = (id) => {
 export const useResetClaim = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: claimApi.reset,
+    mutationFn: claimApi.resetClaim,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['claims'] }),
   });
 };
@@ -43,7 +43,7 @@ export const useResetClaim = () => {
 export const useDeleteClaim = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: claimApi.delete,
+    mutationFn: claimApi.deleteClaim,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['claims'] }),
   });
 };

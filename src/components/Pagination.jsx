@@ -1,65 +1,111 @@
-function Pagination({
-  currentPage,
-  totalPages,
-  onPageChange,
-}) {
+// src/components/Pagination.jsx
+
+const btnBase = {
+  display:        'inline-flex',
+  alignItems:     'center',
+  justifyContent: 'center',
+  width:          32,
+  height:         32,
+  borderRadius:   7,
+  border:         '1px solid #e6edf5',
+  fontSize:       13,
+  fontWeight:     700,
+  cursor:         'pointer',
+  transition:     'all 0.15s',
+};
+
+function Pagination({ currentPage, totalPages, onPageChange }) {
   if (totalPages <= 1) return null;
 
-  const pages = [];
+  // Show at most 5 page buttons, centred on current page
+  const getPages = () => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    let start = Math.max(1, currentPage - 2);
+    let end   = Math.min(totalPages, start + 4);
+    if (end - start < 4) start = Math.max(1, end - 4);
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  };
 
-  for (let i = 1; i <= totalPages; i++) {
-    pages.push(i);
-  }
+  const pages = getPages();
 
   return (
-    <div className="pagination text-sm flex justify-center items-center gap-2 mt-4"
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        gap: 8,
-        marginTop: 20,
-      }}
-    >
-      <button
-        disabled={currentPage === 1}
-        onClick={() => onPageChange(currentPage - 1)}
-        className="text-xs px-2  hover:text-blue-600"
-		style={{ width: 80, height: 30, borderRadius: 8 }}
-      >
-        ← Previous
-      </button>
+    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
 
+      {/* First */}
+      {pages[0] > 1 && (
+        <>
+          <button
+            style={{ ...btnBase, background: 'white', color: '#344054' }}
+            onClick={() => onPageChange(1)}
+          >
+            1
+          </button>
+          {pages[0] > 2 && (
+            <span style={{ color: '#667085', fontSize: 13, padding: '0 2px' }}>…</span>
+          )}
+        </>
+      )}
+
+      {/* Page buttons */}
       {pages.map((page) => (
         <button
           key={page}
-          onClick={() => onPageChange(page)}
           style={{
-            width: 30,
-            height: 30,
-            borderRadius: 8,
-            border:
-              currentPage === page
-                ? "1px solid #006fd6"
-                : "1px solid #d0d5dd",
-            background:
-              currentPage === page ? "#006fd6" : "#fff",
-            color:
-              currentPage === page ? "#fff" : "#344054",
-            cursor: "pointer",
+            ...btnBase,
+            background: page === currentPage ? '#006fd6' : 'white',
+            color:      page === currentPage ? 'white'    : '#344054',
+            border:     page === currentPage
+              ? '1px solid #006fd6'
+              : '1px solid #e6edf5',
           }}
+          onClick={() => onPageChange(page)}
         >
           {page}
         </button>
       ))}
 
+      {/* Last */}
+      {pages[pages.length - 1] < totalPages && (
+        <>
+          {pages[pages.length - 1] < totalPages - 1 && (
+            <span style={{ color: '#667085', fontSize: 13, padding: '0 2px' }}>…</span>
+          )}
+          <button
+            style={{ ...btnBase, background: 'white', color: '#344054' }}
+            onClick={() => onPageChange(totalPages)}
+          >
+            {totalPages}
+          </button>
+        </>
+      )}
+
+      {/* Prev / Next */}
       <button
-        disabled={currentPage === totalPages}
-        onClick={() => onPageChange(currentPage + 1)}
-        className="text-xs px-2 hover:text-blue-600"
-		style={{ width: 80, height: 30, borderRadius: 8 }}
+        style={{
+          ...btnBase,
+          background: currentPage === 1 ? '#f4f8fd' : 'white',
+          color:      currentPage === 1 ? '#d0d5dd' : '#344054',
+          cursor:     currentPage === 1 ? 'not-allowed' : 'pointer',
+          marginLeft:  4,
+        }}
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage === 1}
       >
-        Next →
+        ‹
+      </button>
+      <button
+        style={{
+          ...btnBase,
+          background: currentPage === totalPages ? '#f4f8fd' : 'white',
+          color:      currentPage === totalPages ? '#d0d5dd' : '#344054',
+          cursor:     currentPage === totalPages ? 'not-allowed' : 'pointer',
+        }}
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+      >
+        ›
       </button>
     </div>
   );
