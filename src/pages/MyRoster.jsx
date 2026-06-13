@@ -38,21 +38,47 @@ const formatTime = (start, end) => {
   return `${start.slice(0, 5)} - ${end.slice(0, 5)}`;
 };
 
-const getStatusClass = (status) => {
-  if (status === "Off") return "status-off";
-  if (status === "Holiday") return "status-approved";
+const getStatusClass = (entry) => {
+  if (entry.is_public_holiday) {
+    return "status-approved";
+  }
+
+  if (entry.status === "Off") {
+    return "status-off";
+  }
+
   return "status-scheduled";
 };
 
 const getShiftName = (entry) => {
-  if (entry.status === "Off") return "Off Day";
-  if (entry.status === "Holiday") return "Public Holiday";
+  // Public Holiday
+  if (entry.is_public_holiday) {
+    if (entry.status === "Off") {
+      return "Holiday 🎉";
+    }
+
+    const shiftName =
+      entry.shift?.shift_name?.split(" ")[0] || "Holiday";
+
+    return `${shiftName} 🎉`;
+  }
+
+  // Normal Off Day
+  if (entry.status === "Off") {
+    return "Off Day";
+  }
+
   return entry.shift?.shift_name || "—";
 };
 
+
 const getShiftTime = (entry) => {
-  if (entry.status === "Off" || entry.status === "Holiday") return "—";
-  return formatTime(entry.shift?.start_time, entry.shift?.end_time);
+  if (entry.status === "Off") return "—";
+
+  return formatTime(
+    entry.shift?.start_time,
+    entry.shift?.end_time
+  );
 };
 
 // ===== View options =====
@@ -189,7 +215,7 @@ function MyRoster() {
               <tbody>
                 {rosterList.map((entry) => {
                   const isToday = entry.roster_date === todayStr;
-                  const isHoliday = entry.status === "Holiday";
+                  const isHoliday = entry.is_public_holiday;
 
                   return (
                     <tr
@@ -225,8 +251,10 @@ function MyRoster() {
                         {entry.status === "Scheduled" ? "30m" : "—"}
                       </td>
                       <td>
-                        <span className={getStatusClass(entry.status)}>
-                          {entry.status}
+                        <span className={getStatusClass(entry)}>
+                          {entry.is_public_holiday
+  ? "Holiday 🎉"
+  : entry.status}
                         </span>
                       </td>
                     </tr>

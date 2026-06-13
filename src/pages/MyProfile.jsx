@@ -345,13 +345,7 @@ function MyProfile() {
 
             <StatusPill status={emp?.status} />
 
-            <button
-              className="change-photo-btn"
-              onClick={() => alert("Photo upload coming soon.")}
-              style={{ marginTop: 14 }}
-            >
-              Change Photo
-            </button>
+            
 
             <div style={{ marginTop: 20, borderTop: "1px solid #edf2f7", paddingTop: 16, textAlign: "left", width: "100%" }}>
               <InfoItem label="Employee ID">

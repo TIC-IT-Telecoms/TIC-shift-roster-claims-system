@@ -1823,3 +1823,47 @@ textarea {
 .user-info small {
   opacity: 0.85;
 }
+
+
+
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+
+  background: rgba(0, 0, 0, 0.5);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  z-index: 9999;
+}
+
+.modal-content {
+  background: #fff;
+  width: 500px;
+  max-width: 90%;
+
+  padding: 24px;
+  border-radius: 12px;
+
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.modal-content input,
+.modal-content textarea {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 15px;
+
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+.modal-content h3 {
+  margin-bottom: 20px;
+}

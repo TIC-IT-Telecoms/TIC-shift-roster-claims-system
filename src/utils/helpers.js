@@ -233,15 +233,39 @@ export const getStatusClass = (status) => {
 export const getShiftCell = (entry) => {
   if (!entry) return { label: "—", style: { color: "#d0d5dd" } };
 
-  if (entry.status === "Off") return {
-    label: "Off",
-    style: { background: "#ff0000", color: "#000000", padding: "5px 10px", borderRadius: 0, fontWeight: 500, fontSize: 12 },
-  };
+  if (entry.is_public_holiday) {
+  const shiftName =
+    entry.shift?.shift_name?.split(" ")[0] || "Holiday";
 
-  // if (entry.status === "Holiday") return {
-  //   label: "Hol",
-  //   style: { background: "#f1eaff", color: "#7a3aed", padding: "5px 10px", borderRadius: 999, fontWeight: 700, fontSize: 12 },
-  // };
+  return {
+    label:
+      entry.status === "Off"
+        ? "Holiday 🎉"
+        : `${shiftName} 🎉`,
+    style: {
+      background: "#7a3aed",
+      color: "#fff",
+      padding: "5px 10px",
+      borderRadius: 999,
+      fontWeight: 700,
+      fontSize: 12,
+    },
+  };
+}
+
+if (entry.status === "Off") {
+  return {
+    label: "Off",
+    style: {
+      background: "#ff0000",
+      color: "#000000",
+      padding: "5px 10px",
+      borderRadius: 0,
+      fontWeight: 500,
+      fontSize: 12,
+    },
+  };
+}
 
   const name = entry.shift?.shift_name || "";
   if (name.includes("Early")) return {
