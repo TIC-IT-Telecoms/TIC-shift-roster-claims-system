@@ -158,7 +158,6 @@ function AdminSettings() {
                   { label: "Admin ID", value: emp ? formatEmpId(emp.employee_id) : "—" },
                   { label: "Username", value: user?.username || "—" },
                   { label: "Role", value: formatRole(user?.role) },
-                  { label: "Team", value: emp?.team?.team_name || "—" },
                   {
                     label: "Status",
                     value: null,
