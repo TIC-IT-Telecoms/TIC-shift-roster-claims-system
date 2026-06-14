@@ -1,4 +1,3 @@
-// src/pages/AdminRosters.jsx
 import { useState } from "react";
 import Layout from "../components/Layout";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -354,9 +353,9 @@ function AdminRosters() {
   const teamRosterMap = buildTeamRosterMap(rosterData);
   const teamNames     = Object.keys(teamRosterMap).sort();
 
-  // const allEntries = rosterData?.roster
-  //   ? Object.values(rosterData.roster).flat()
-  //   : [];
+  const allEntries = rosterData?.roster
+    ? Object.values(rosterData.roster).flat()
+    : [];
 
   const stats = [
     { label: `${allEntries.filter((r) => r.status === "Scheduled").length} Scheduled`, bg: "#eaf4ff", color: "#006fd6" },
@@ -478,7 +477,7 @@ function AdminRosters() {
           </select>
         </div>
 
-        {/* ===== Summary Pills =====
+        {/* ===== Summary Pills =====*/}
         <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
           {stats.map(({ label, bg, color }) => (
             <span key={label} style={{
@@ -489,7 +488,7 @@ function AdminRosters() {
               {label}
             </span>
           ))}
-        </div> */}
+        </div> 
 
         {/* ===== Roster Table ===== */}
         <div className="roster-table-card">

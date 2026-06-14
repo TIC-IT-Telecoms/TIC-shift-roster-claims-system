@@ -7,11 +7,8 @@ import { holidayApi } from "../api/holidayApi";
 import { QUERY_KEYS } from "../utils/queryKeys";
 import useNotifications from "../hooks/useNotifications";
 import {
-  formatZAR,
-  formatDateTime,
-  getTodayStr,
-  getMonthStart,
-  calcClaimEarnings,
+  formatZAR, formatDateTime, getTodayStr,
+  getMonthStart, calcClaimEarnings,
 } from "../utils/helpers";
 
 // ===== Constants =====
