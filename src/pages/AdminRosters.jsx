@@ -1,4 +1,3 @@
-// src/pages/AdminRosters.jsx
 import { useState } from "react";
 import Layout from "../components/Layout";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -354,15 +353,25 @@ function AdminRosters() {
   const teamRosterMap = buildTeamRosterMap(rosterData);
   const teamNames     = Object.keys(teamRosterMap).sort();
 
-  // const allEntries = rosterData?.roster
-  //   ? Object.values(rosterData.roster).flat()
-  //   : [];
+  const allEntries = rosterData?.roster
+    ? Object.values(rosterData.roster).flat()
+    : [];
 
-  // const stats = [
-  //   { label: `${allEntries.filter((r) => r.status === "Scheduled").length} Scheduled`, bg: "#eaf4ff", color: "#006fd6" },
-  //   { label: `${allEntries.filter((r) => r.status === "Off").length} Off`,             bg: "#f2f4f7", color: "#667085" },
-  //   { label: `${allEntries.filter((r) => r.is_public_holiday).length} Holiday`,        bg: "#f1eaff", color: "#7a3aed" },
-  // ];
+  const stats = [
+    { label: `${allEntries.filter((r) => r.status === "Scheduled").length} Scheduled`, bg: "#eaf4ff", color: "#006fd6" },
+    { label: `${allEntries.filter((r) => r.status === "Off").length} Off`, bg: "#f2f4f7", color: "#667085" },
+    {
+  label: `${
+    new Set(
+      allEntries
+        .filter((r) => Number(r.is_public_holiday) === 1)
+        .map((r) => r.roster_date)
+    ).size
+  } Holiday`,
+  bg: "#f1eaff",
+  color: "#7a3aed",
+}
+  ];
 
   const handleGenSuccess = (data) => {
     setGenResult(data.data);
@@ -468,7 +477,7 @@ function AdminRosters() {
           </select>
         </div>
 
-        {/* ===== Summary Pills =====
+        {/* ===== Summary Pills =====*/}
         <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
           {stats.map(({ label, bg, color }) => (
             <span key={label} style={{
@@ -479,7 +488,7 @@ function AdminRosters() {
               {label}
             </span>
           ))}
-        </div> */}
+        </div> 
 
         {/* ===== Roster Table ===== */}
         <div className="roster-table-card">
