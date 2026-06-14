@@ -291,13 +291,7 @@ function MyProfile() {
               {emp?.employment_type || formatRole(user?.role)}
             </p>
 
-            <button
-              className="change-photo-btn"
-              onClick={() => alert("Photo upload coming soon.")}
-              style={{ marginTop: 14 }}
-            >
-              Change Photo
-            </button>
+            <StatusPill status={emp?.status} />
 
             <div style={{ marginTop: 20, borderTop: "1px solid #edf2f7", paddingTop: 16, textAlign: "left", width: "100%" }}>
               <InfoItem label="Employee ID">

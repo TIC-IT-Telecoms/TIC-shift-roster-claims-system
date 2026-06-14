@@ -358,11 +358,21 @@ function AdminRosters() {
   //   ? Object.values(rosterData.roster).flat()
   //   : [];
 
-  // const stats = [
-  //   { label: `${allEntries.filter((r) => r.status === "Scheduled").length} Scheduled`, bg: "#eaf4ff", color: "#006fd6" },
-  //   { label: `${allEntries.filter((r) => r.status === "Off").length} Off`,             bg: "#f2f4f7", color: "#667085" },
-  //   { label: `${allEntries.filter((r) => r.is_public_holiday).length} Holiday`,        bg: "#f1eaff", color: "#7a3aed" },
-  // ];
+  const stats = [
+    { label: `${allEntries.filter((r) => r.status === "Scheduled").length} Scheduled`, bg: "#eaf4ff", color: "#006fd6" },
+    { label: `${allEntries.filter((r) => r.status === "Off").length} Off`, bg: "#f2f4f7", color: "#667085" },
+    {
+  label: `${
+    new Set(
+      allEntries
+        .filter((r) => Number(r.is_public_holiday) === 1)
+        .map((r) => r.roster_date)
+    ).size
+  } Holiday`,
+  bg: "#f1eaff",
+  color: "#7a3aed",
+}
+  ];
 
   const handleGenSuccess = (data) => {
     setGenResult(data.data);
