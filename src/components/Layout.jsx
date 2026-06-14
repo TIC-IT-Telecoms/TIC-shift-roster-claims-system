@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import useNotifications from "../hooks/useNotifications";
+import GlobalSearch from "./ui/GlobalSearch";
 
 function Layout({ children }) {
   const { user } = useAuthStore();
@@ -82,9 +83,7 @@ function Layout({ children }) {
             </div>
           </div>
 
-          <div className="top-search">
-            <input placeholder="Search employees, shifts, claims, rosters..." />
-          </div>
+          <GlobalSearch />
 
           <div className="top-actions">
 
@@ -96,7 +95,8 @@ function Layout({ children }) {
             >
               🔔
               {unreadCount > 0 && (
-                <span style={{ position: "absolute",
+                <span style={{
+                  position: "absolute",
                   top: -4,
                   right: -4,
                   minWidth: 16,

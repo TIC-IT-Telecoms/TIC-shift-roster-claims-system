@@ -1,3 +1,4 @@
+// src/pages/MyClaims.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
@@ -44,7 +45,7 @@ function ClaimModal({ claim, onClose, hourlyRate }) {
       display: "flex", alignItems: "center",
       justifyContent: "center", zIndex: 1000, padding: 16,
     }}>
-      <form onSubmit={handleSubmit} style={{
+      <div style={{
         background: "white", borderRadius: 16,
         width: "100%", maxWidth: 480,
         maxHeight: "85vh", overflowY: "auto",
@@ -53,7 +54,7 @@ function ClaimModal({ claim, onClose, hourlyRate }) {
       }}>
         {/* Header */}
         <div style={{
-          background: isEditing ? "#b54708" : "#006fd6", color: "white",
+          background: "#006fd6", color: "white",
           padding: "18px 24px",
           display: "flex", justifyContent: "space-between", alignItems: "center",
         }}>
@@ -62,7 +63,7 @@ function ClaimModal({ claim, onClose, hourlyRate }) {
               Claim #CLM{String(claim.claim_id).padStart(4, "0")}
             </h3>
             <p style={{ margin: "3px 0 0", fontSize: 12, opacity: 0.85 }}>
-              Status: {claim.status}
+              {claim.claim_date}
             </p>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -163,25 +164,21 @@ function ClaimModal({ claim, onClose, hourlyRate }) {
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
             <button onClick={onClose} className="cancel-btn">Close</button>
           </div>
-
         </div>
-      </form>
+      </div>
     </div>
   );
 }
 
-// ===== Main Employee Dashboard Component =====
+// ===== Main Component =====
 const TABS = ["All", "Pending", "Approved", "Rejected"];
 
 function MyClaims() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("All");
-  
-  // Modal tracking state contexts
-  const [modalContext, setModalContext] = useState({ claim: null, isEditing: false });
+  const [viewClaim, setViewClaim] = useState(null);
 
-  // ===== Fetch profile for hourly rate calculations =====
+  // ===== Fetch profile for hourly rate =====
   const { data: profile } = useQuery({
     queryKey: QUERY_KEYS.PROFILE,
     queryFn:  profileApi.getProfile,
@@ -197,27 +194,7 @@ function MyClaims() {
     select:   (d) => d.data,
   });
 
-  // ===== Update Claim Mutation (PUT /api/claims/:id) =====
-  const updateClaimMutation = useMutation({
-    mutationFn: ({ claimId, data }) => claimApi.update(claimId, data),
-    onSuccess: (res) => {
-      alert(res?.message || "Claim updated successfully!");
-      setModalContext({ claim: null, isEditing: false }); // Close modal safely
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.MY_CLAIMS({}) }); // Refresh lists
-    },
-    onError: (error) => {
-      alert(`Update failed: ${error?.response?.data?.message || error.message}`);
-    }
-  });
-
-  const handleUpdateSave = (updatedData) => {
-    updateClaimMutation.mutate({
-      claimId: modalContext.claim.claim_id,
-      data: updatedData
-    });
-  };
-
-  // Breakdown status category counters
+  // ===== Tab counts =====
   const counts = {
     All:      allClaims?.length || 0,
     Pending:  allClaims?.filter((c) => c.status === "Pending").length  || 0,
@@ -244,7 +221,7 @@ function MyClaims() {
           </button>
         </div>
 
-        {/* ===== Tabs Row ===== */}
+        {/* ===== Tabs ===== */}
         <div className="claims-tabs">
           {TABS.map((tab) => (
             <button
@@ -257,7 +234,7 @@ function MyClaims() {
           ))}
         </div>
 
-        {/* ===== Data Table ===== */}
+        {/* ===== Table ===== */}
         <div className="roster-table-card">
           {isLoading ? (
             <p style={{ color: "#667085", fontSize: 13, padding: "20px 0" }}>Loading claims...</p>
@@ -331,12 +308,9 @@ function MyClaims() {
 
         {viewClaim && (
           <ClaimModal
-            claim={modalContext.claim}
-            isEditing={modalContext.isEditing}
+            claim={viewClaim}
             hourlyRate={hourlyRate}
-            isSaving={updateClaimMutation.isPending}
-            onClose={() => setModalContext({ claim: null, isEditing: false })}
-            onSave={handleUpdateSave}
+            onClose={() => setViewClaim(null)}
           />
         )}
       </section>
