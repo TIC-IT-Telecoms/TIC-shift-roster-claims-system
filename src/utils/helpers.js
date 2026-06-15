@@ -329,11 +329,6 @@ export const countScheduled = (rosterData) =>
 // ===================================================
 
 /**
- * Calculate earnings for a single claim
- */
-// src/utils/helpers.js — replace calcClaimEarnings
-
-/**
  * Calculate earnings for a single claim with grave shift holiday split support.
  *
  * @param {Object} claim        - Claim record
@@ -396,6 +391,23 @@ export const calcClaimEarnings = (claim, hourlyRate, shift = null, isNextDayHoli
     total: normal + overtime + holiday,
   };
 };
+
+/**
+ * Calculate total payroll amount from an array of claims
+ */
+export const calcPayrollTotal = (claims = []) =>
+  claims.reduce((total, claim) => {
+    const rate = Number(claim.employee?.hourly_rate || 0);
+
+    return (
+      total +
+      calcClaimEarnings(
+        claim,
+        rate,
+        claim.shift ?? null
+      ).total
+    );
+  }, 0);
 
 /**
  * Calculate total earnings from an array of approved claims
