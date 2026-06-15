@@ -7,15 +7,16 @@ import { holidayApi } from "../api/holidayApi";
 import { QUERY_KEYS } from "../utils/queryKeys";
 import useNotifications from "../hooks/useNotifications";
 import {
+  formatRelativeTime, getUpcomingHolidays,
   formatZAR, formatDateTime, getTodayStr,
-  getMonthStart, calcClaimEarnings,
+  getMonthStart, calcClaimEarnings, daysUntil
 } from "../utils/helpers";
 
 // ===== Constants =====
-const todayStr      = getTodayStr();
-const monthStart    = getMonthStart();
-const currentYear   = new Date().getFullYear();
-const monthName     = new Date().toLocaleDateString("en", { month: "long" });
+const todayStr = getTodayStr();
+const monthStart = getMonthStart();
+const currentYear = new Date().getFullYear();
+const monthName = new Date().toLocaleDateString("en", { month: "long" });
 
 const in30DaysStr = (() => {
   const d = new Date();
@@ -25,37 +26,21 @@ const in30DaysStr = (() => {
 
 // ===== Notification type config (admin view) =====
 const NOTIF_CONFIG = {
-  claim_submitted:   { icon: "📝", bg: "#fff3e5", color: "#b54708", border: "#fed7aa" },
-  claim_approved:    { icon: "✅", bg: "#e8f8ef", color: "#157347", border: "#bbf7d0" },
-  claim_rejected:    { icon: "❌", bg: "#fee4e2", color: "#b42318", border: "#fecaca" },
-  claim_reset:       { icon: "↺",  bg: "#fff3e5", color: "#b54708", border: "#fed7aa" },
-  roster_published:  { icon: "📅", bg: "#eaf4ff", color: "#006fd6", border: "#bfdbfe" },
-  holiday_alert:     { icon: "🌟", bg: "#f1eaff", color: "#7a3aed", border: "#d8b4fe" },
+  claim_submitted: { icon: "📝", bg: "#fff3e5", color: "#b54708", border: "#fed7aa" },
+  claim_approved: { icon: "✅", bg: "#e8f8ef", color: "#157347", border: "#bbf7d0" },
+  claim_rejected: { icon: "❌", bg: "#fee4e2", color: "#b42318", border: "#fecaca" },
+  claim_reset: { icon: "↺", bg: "#fff3e5", color: "#b54708", border: "#fed7aa" },
+  roster_published: { icon: "📅", bg: "#eaf4ff", color: "#006fd6", border: "#bfdbfe" },
+  holiday_alert: { icon: "🌟", bg: "#f1eaff", color: "#7a3aed", border: "#d8b4fe" },
   payslip_available: { icon: "💰", bg: "#e8f8ef", color: "#157347", border: "#bbf7d0" },
-  system:            { icon: "🔔", bg: "#f4f8fd", color: "#344054", border: "#e6edf5" },
-};
-
-// ===== Relative time =====
-const formatRelTime = (str) => {
-  if (!str) return "";
-  const d      = new Date(str);
-  if (isNaN(d)) return str;
-  const diffMs = Date.now() - d.getTime();
-  const diffM  = Math.floor(diffMs / 60_000);
-  const diffH  = Math.floor(diffMs / 3_600_000);
-  const diffD  = Math.floor(diffMs / 86_400_000);
-  if (diffM < 1)  return "Just now";
-  if (diffM < 60) return `${diffM}m ago`;
-  if (diffH < 24) return `${diffH}h ago`;
-  if (diffD < 7)  return `${diffD}d ago`;
-  return d.toLocaleString("en-ZA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  system: { icon: "🔔", bg: "#f4f8fd", color: "#344054", border: "#e6edf5" },
 };
 
 // ===== Build bar chart buckets =====
 const buildChartData = (claims) => {
   const weeks = Array.from({ length: 6 }, (_, i) => ({
-    label:      `${[1, 7, 13, 19, 25, 31][i]} ${monthName.slice(0, 3)}`,
-    submitted:  0, approved: 0, rejected: 0,
+    label: `${[1, 7, 13, 19, 25, 31][i]} ${monthName.slice(0, 3)}`,
+    submitted: 0, approved: 0, rejected: 0,
     submittedH: 0, approvedH: 0, rejectedH: 0,
   }));
 
@@ -71,8 +56,8 @@ const buildChartData = (claims) => {
   return weeks.map((w) => ({
     ...w,
     submittedH: Math.round((w.submitted / maxVal) * 120),
-    approvedH:  Math.round((w.approved  / maxVal) * 120),
-    rejectedH:  Math.round((w.rejected  / maxVal) * 120),
+    approvedH: Math.round((w.approved / maxVal) * 120),
+    rejectedH: Math.round((w.rejected / maxVal) * 120),
   }));
 };
 
@@ -111,32 +96,32 @@ function AdminDashboard() {
   // ===== Queries =====
   const { data: employees } = useQuery({
     queryKey: QUERY_KEYS.EMPLOYEES,
-    queryFn:  employeeApi.getAll,
-    select:   (d) => d.data,
+    queryFn: employeeApi.getAll,
+    select: (d) => d.data,
   });
 
   const { data: allMonthClaims, isLoading: loadingClaims } = useQuery({
     queryKey: QUERY_KEYS.CLAIMS({ start_date: monthStart, end_date: todayStr }),
-    queryFn:  () => claimApi.getAll({ start_date: monthStart, end_date: todayStr }),
-    select:   (d) => d.data,
+    queryFn: () => claimApi.getAll({ start_date: monthStart, end_date: todayStr }),
+    select: (d) => d.data,
   });
 
   const { data: pendingClaims } = useQuery({
     queryKey: QUERY_KEYS.CLAIMS({ status: "Pending" }),
-    queryFn:  () => claimApi.getAll({ status: "Pending" }),
-    select:   (d) => d.data,
+    queryFn: () => claimApi.getAll({ status: "Pending" }),
+    select: (d) => d.data,
   });
 
   const { data: approvedClaims } = useQuery({
     queryKey: QUERY_KEYS.CLAIMS({ status: "Approved", start_date: monthStart, end_date: todayStr }),
-    queryFn:  () => claimApi.getAll({ status: "Approved", start_date: monthStart, end_date: todayStr }),
-    select:   (d) => d.data,
+    queryFn: () => claimApi.getAll({ status: "Approved", start_date: monthStart, end_date: todayStr }),
+    select: (d) => d.data,
   });
 
   const { data: holidays } = useQuery({
     queryKey: QUERY_KEYS.HOLIDAYS(currentYear),
-    queryFn:  () => holidayApi.getAll(currentYear),
-    select:   (d) => d.data,
+    queryFn: () => holidayApi.getAll(currentYear),
+    select: (d) => d.data,
   });
 
   // ===== Notifications =====
@@ -150,9 +135,7 @@ function AdminDashboard() {
   // ===== Derived =====
   const activeEmployees = employees?.filter((e) => e.status === "Active") || [];
 
-  const upcomingHolidays = (holidays || []).filter(
-    (h) => h.holiday_date >= todayStr && h.holiday_date <= in30DaysStr
-  );
+  const upcomingHolidays = getUpcomingHolidays(holidays);
 
   const totalPayroll = (approvedClaims || []).reduce((sum, claim) => {
     const rate = Number(claim.employee?.hourly_rate || 0);
@@ -160,16 +143,16 @@ function AdminDashboard() {
     return sum + calcClaimEarnings(claim, rate, claim.shift ?? null).total;
   }, 0);
 
-  const chartData    = buildChartData(allMonthClaims);
+  const chartData = buildChartData(allMonthClaims);
   const activityFeed = buildActivityFeed(allMonthClaims);
 
   // ===== Stats =====
   const stats = [
-    { icon: "👥", label: "Total Employees",           value: activeEmployees.length,         sub: "Active",         cls: "" },
-    { icon: "📋", label: "Pending Claims",             value: pendingClaims?.length  || 0,    sub: "Awaiting Approval", cls: "green" },
-    { icon: "✅", label: "Approved Claims",            value: approvedClaims?.length || 0,    sub: "This Month",     cls: "orange" },
-    { icon: "💰", label: `Payroll (${monthName})`,     value: formatZAR(totalPayroll),         sub: "This Month",     cls: "purple" },
-    { icon: "📅", label: "Upcoming Holidays",          value: upcomingHolidays.length,         sub: "Next 30 Days",   cls: "" },
+    { icon: "👥", label: "Total Employees", value: activeEmployees.length, sub: "Active", cls: "" },
+    { icon: "📋", label: "Pending Claims", value: pendingClaims?.length || 0, sub: "Awaiting Approval", cls: "green" },
+    { icon: "✅", label: "Approved Claims", value: approvedClaims?.length || 0, sub: "This Month", cls: "orange" },
+    { icon: "💰", label: `Payroll (${monthName})`, value: formatZAR(totalPayroll), sub: "This Month", cls: "purple" },
+    { icon: "📅", label: "Upcoming Holidays", value: upcomingHolidays.length, sub: "Next 30 Days", cls: "" },
   ];
 
   return (
@@ -219,8 +202,8 @@ function AdminDashboard() {
                       {chartData.map((week, i) => (
                         <div className="chart-group" key={i}>
                           <div className="bar submitted" style={{ height: `${Math.max(week.submittedH, 4)}px` }} />
-                          <div className="bar approved"  style={{ height: `${Math.max(week.approvedH,  4)}px` }} />
-                          <div className="bar rejected"  style={{ height: `${Math.max(week.rejectedH,  4)}px` }} />
+                          <div className="bar approved" style={{ height: `${Math.max(week.approvedH, 4)}px` }} />
+                          <div className="bar rejected" style={{ height: `${Math.max(week.rejectedH, 4)}px` }} />
                         </div>
                       ))}
                     </div>
@@ -320,7 +303,7 @@ function AdminDashboard() {
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                   {notifications.slice(0, 6).map((notif) => {
-                    const cfg  = NOTIF_CONFIG[notif.type] || NOTIF_CONFIG.system;
+                    const cfg = NOTIF_CONFIG[notif.type] || NOTIF_CONFIG.system;
                     const read = notif.is_read;
 
                     return (
@@ -331,22 +314,22 @@ function AdminDashboard() {
                           navigate("/notifications");
                         }}
                         style={{
-                          display:     "flex",
-                          gap:         10,
-                          padding:     "10px 8px",
+                          display: "flex",
+                          gap: 10,
+                          padding: "10px 8px",
                           borderRadius: 8,
-                          cursor:      "pointer",
-                          background:  read ? "transparent" : `${cfg.bg}88`,
-                          borderLeft:  read ? "3px solid transparent" : `3px solid ${cfg.color}`,
-                          transition:  "background 0.15s",
+                          cursor: "pointer",
+                          background: read ? "transparent" : `${cfg.bg}88`,
+                          borderLeft: read ? "3px solid transparent" : `3px solid ${cfg.color}`,
+                          transition: "background 0.15s",
                         }}
                       >
                         {/* Icon */}
                         <div style={{
-                          width:          34, height: 34, borderRadius: "50%",
-                          background:     read ? "#f4f8fd" : cfg.bg,
-                          border:         `1px solid ${read ? "#e6edf5" : cfg.border}`,
-                          display:        "flex", alignItems: "center",
+                          width: 34, height: 34, borderRadius: "50%",
+                          background: read ? "#f4f8fd" : cfg.bg,
+                          border: `1px solid ${read ? "#e6edf5" : cfg.border}`,
+                          display: "flex", alignItems: "center",
                           justifyContent: "center", fontSize: 15, flexShrink: 0,
                         }}>
                           {cfg.icon}
@@ -355,25 +338,25 @@ function AdminDashboard() {
                         {/* Text */}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{
-                            margin:       "0 0 2px",
-                            fontSize:     13,
-                            fontWeight:   read ? 400 : 700,
-                            color:        read ? "#667085" : "#1d2939",
-                            overflow:     "hidden",
+                            margin: "0 0 2px",
+                            fontSize: 13,
+                            fontWeight: read ? 400 : 700,
+                            color: read ? "#667085" : "#1d2939",
+                            overflow: "hidden",
                             textOverflow: "ellipsis",
-                            whiteSpace:   "nowrap",
+                            whiteSpace: "nowrap",
                           }}>
                             {notif.title}
                           </p>
                           <small style={{
-                            color:        "#98a2b3",
-                            fontSize:     11,
-                            display:      "block",
-                            overflow:     "hidden",
+                            color: "#98a2b3",
+                            fontSize: 11,
+                            display: "block",
+                            overflow: "hidden",
                             textOverflow: "ellipsis",
-                            whiteSpace:   "nowrap",
+                            whiteSpace: "nowrap",
                           }}>
-                            {formatRelTime(notif.created_at)}
+                            {formatRelativeTime(notif.created_at)}
                           </small>
                         </div>
 
@@ -410,18 +393,16 @@ function AdminDashboard() {
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   {upcomingHolidays.slice(0, 5).map((h) => {
-                    const daysAway = Math.ceil(
-                      (new Date(h.holiday_date) - new Date(todayStr)) / 86_400_000
-                    );
+                    const daysAway = daysUntil(h.holiday_date);
                     return (
                       <div key={h.holiday_id} style={{
-                        display:        "flex",
+                        display: "flex",
                         justifyContent: "space-between",
-                        alignItems:     "center",
-                        padding:        "9px 12px",
-                        borderRadius:   8,
-                        background:     daysAway <= 7 ? "#f9f0ff" : "#f4f8fd",
-                        border:         `1px solid ${daysAway <= 7 ? "#d8b4fe" : "#e6edf5"}`,
+                        alignItems: "center",
+                        padding: "9px 12px",
+                        borderRadius: 8,
+                        background: daysAway <= 7 ? "#f9f0ff" : "#f4f8fd",
+                        border: `1px solid ${daysAway <= 7 ? "#d8b4fe" : "#e6edf5"}`,
                       }}>
                         <div>
                           <div style={{ fontSize: 13, fontWeight: 700, color: "#344054" }}>
@@ -430,10 +411,10 @@ function AdminDashboard() {
                           <div style={{ fontSize: 11, color: "#667085" }}>{h.holiday_date}</div>
                         </div>
                         <span style={{
-                          background:   daysAway <= 7 ? "#f1eaff" : "#eaf4ff",
-                          color:        daysAway <= 7 ? "#7a3aed"  : "#006fd6",
-                          padding:      "3px 10px", borderRadius: 999,
-                          fontSize:     11, fontWeight: 700,
+                          background: daysAway <= 7 ? "#f1eaff" : "#eaf4ff",
+                          color: daysAway <= 7 ? "#7a3aed" : "#006fd6",
+                          padding: "3px 10px", borderRadius: 999,
+                          fontSize: 11, fontWeight: 700,
                         }}>
                           {daysAway === 0 ? "Today" : daysAway === 1 ? "Tomorrow" : `In ${daysAway}d`}
                         </span>

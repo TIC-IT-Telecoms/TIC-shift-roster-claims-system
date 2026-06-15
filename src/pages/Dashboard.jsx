@@ -4,11 +4,12 @@ import { useQuery } from "@tanstack/react-query";
 import { profileApi } from "../api/profileApi";
 import { claimApi } from "../api/claimApi";
 import { rosterApi } from "../api/rosterApi";
+import { holidayApi } from "../api/holidayApi";
 import { QUERY_KEYS } from "../utils/queryKeys";
 import useNotifications from "../hooks/useNotifications";
 import { getTodayStr, getWeekRange, getMonthStart, formatZAR,
-  formatDate, getShiftLabel, getShiftTime, findNextShift,
-  countScheduled, calcTotalEarnings, flattenRoster, 
+  formatDate, getShiftLabel, getShiftTime, findNextShift, daysUntil,
+  countScheduled, calcTotalEarnings, flattenRoster, getUpcomingHolidays,
 } from "../utils/helpers";
 
 // ===== Constants (computed once outside component) =====
@@ -77,9 +78,7 @@ function Dashboard() {
     select: (d) => d.data,
   });
 
-  const upcomingHolidays = (holidays || []).filter(
-    (h) => h.holiday_date >= todayStr && h.holiday_date <= in30DaysStr
-  );
+const upcomingHolidays = getUpcomingHolidays(holidays);
 
   // ===== Derived =====
   const emp = profile?.employee;
@@ -339,9 +338,7 @@ function Dashboard() {
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   {upcomingHolidays.slice(0, 5).map((h) => {
-                    const daysAway = Math.ceil(
-                      (new Date(h.holiday_date) - new Date(todayStr)) / 86_400_000
-                    );
+                    const daysAway = daysUntil(h.holiday_date);
                     return (
                       <div key={h.holiday_id} style={{
                         display: "flex",
