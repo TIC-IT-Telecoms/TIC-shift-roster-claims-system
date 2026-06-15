@@ -1,9 +1,11 @@
-import api from './axiosInstance.js';
+import api from './axiosInstance';
 
 export const payrollApi = {
-  // GET /api/payroll -> Fetches records (Enforces role-isolation on the backend)
-  getHistory: () => api.get('/payroll'),
-
-  // POST /api/payroll/generate -> Admin payload execution to run formulas
-  generate: (payload) => api.post('/payroll/generate', payload),
+  generate:      (data)   => api.post('/payroll/generate', data),
+  generateBulk:  (data)   => api.post('/payroll/generate-bulk', data),
+  getPreview:    (params) => api.get('/payroll/preview', { params }),
+  getAll:        (params) => api.get('/payroll', { params }),
+  getMyPayroll:  ()       => api.get('/payroll/me'),
+  getById:       (id)     => api.get(`/payroll/${id}`),
+  delete:        (id)     => api.delete(`/payroll/${id}`),
 };

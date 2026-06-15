@@ -9,21 +9,16 @@ import useNotifications from "../hooks/useNotifications";
 import {
   formatRelativeTime, getUpcomingHolidays,
   formatZAR, formatDateTime, getTodayStr,
-  getMonthStart, calcClaimEarnings, daysUntil,
-  calcPayrollTotal
+  getMonthStart, daysUntil, getCurrentYear, 
+  getCurrentMonthName, calcPayrollTotal,
+   buildActivityFeed,
 } from "../utils/helpers";
 
 // ===== Constants =====
 const todayStr = getTodayStr();
 const monthStart = getMonthStart();
-const currentYear = new Date().getFullYear();
-const monthName = new Date().toLocaleDateString("en", { month: "long" });
-
-const in30DaysStr = (() => {
-  const d = new Date();
-  d.setDate(d.getDate() + 30);
-  return d.toISOString().split("T")[0];
-})();
+const currentYear = getCurrentYear();
+const monthName = getCurrentMonthName();
 
 // ===== Notification type config (admin view) =====
 const NOTIF_CONFIG = {
@@ -60,35 +55,6 @@ const buildChartData = (claims) => {
     approvedH: Math.round((w.approved / maxVal) * 120),
     rejectedH: Math.round((w.rejected / maxVal) * 120),
   }));
-};
-
-// ===== Build activity feed from claims =====
-const buildActivityFeed = (claims) => {
-  if (!claims?.length) return [];
-
-  return [...claims]
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    .slice(0, 6)
-    .map((claim) => {
-      const name = claim.employee?.name || "An employee";
-      if (claim.status === "Approved") return {
-        icon: "✅", iconClass: "activity-icon green",
-        text: `${name}'s claim approved`,
-        time: claim.updated_at || claim.created_at,
-      };
-      if (claim.status === "Rejected") return {
-        icon: "❌", iconClass: "activity-icon",
-        text: `${name}'s claim rejected`,
-        time: claim.updated_at || claim.created_at,
-      };
-      return {
-        icon: "📝", iconClass: "activity-icon",
-        text: `${name} submitted a claim`,
-        time: claim.created_at,
-      };
-    })
-    .sort((a, b) => new Date(b.time) - new Date(a.time))
-    .slice(0, 5);
 };
 
 function AdminDashboard() {

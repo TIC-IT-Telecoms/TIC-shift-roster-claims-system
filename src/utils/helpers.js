@@ -56,6 +56,14 @@ export const formatEmploymentType = (type) => type || "—";
  * Format date to South African locale
  * formatDate("2025-06-16") → "16 Jun 2025"
  */
+export const getCurrentYear = () =>
+  new Date().getFullYear();
+
+export const getCurrentMonthName = () =>
+  new Date().toLocaleDateString("en", {
+    month: "long",
+  });
+
 export const formatDate = (dateStr) => {
   if (!dateStr) return "—";
   return new Date(dateStr).toLocaleDateString("en-ZA", {
@@ -226,38 +234,38 @@ export const getShiftCell = (entry) => {
   if (!entry) return { label: "—", style: { color: "#d0d5dd" } };
 
   if (entry.is_public_holiday) {
-  const shiftName =
-    entry.shift?.shift_name?.split(" ")[0] || "Holiday";
+    const shiftName =
+      entry.shift?.shift_name?.split(" ")[0] || "Holiday";
 
-  return {
-    label:
-      entry.status === "Off"
-        ? "Holiday 🎉"
-        : `${shiftName} 🎉`,
-    style: {
-      background: "#7a3aed",
-      color: "#fff",
-      padding: "5px 10px",
-      borderRadius: 999,
-      fontWeight: 700,
-      fontSize: 12,
-    },
-  };
-}
+    return {
+      label:
+        entry.status === "Off"
+          ? "Holiday 🎉"
+          : `${shiftName} 🎉`,
+      style: {
+        background: "#7a3aed",
+        color: "#fff",
+        padding: "5px 10px",
+        borderRadius: 999,
+        fontWeight: 700,
+        fontSize: 12,
+      },
+    };
+  }
 
-if (entry.status === "Off") {
-  return {
-    label: "Off",
-    style: {
-      background: "#ff0000",
-      color: "#000000",
-      padding: "5px 10px",
-      borderRadius: 0,
-      fontWeight: 500,
-      fontSize: 12,
-    },
-  };
-}
+  if (entry.status === "Off") {
+    return {
+      label: "Off",
+      style: {
+        background: "#ff0000",
+        color: "#000000",
+        padding: "5px 10px",
+        borderRadius: 0,
+        fontWeight: 500,
+        fontSize: 12,
+      },
+    };
+  }
 
   const name = entry.shift?.shift_name || "";
   if (name.includes("Early")) return {
@@ -513,8 +521,8 @@ export const resolveCurrentDay = (startDate, cycleLength) => {
 export const isActive = (startDate) =>
   startDate && startDate <= todayStr;
 
-  // Admin & Employee dashboard
-  export const formatRelativeTime = (dateStr) => {
+// Admin & Employee dashboard
+export const formatRelativeTime = (dateStr) => {
   if (!dateStr) return "";
 
   const date = new Date(dateStr);
@@ -563,4 +571,45 @@ export const daysUntil = (dateStr) => {
   return Math.ceil(
     (target - today) / (1000 * 60 * 60 * 24)
   );
+};
+
+// Admin dashboard activity feed builder
+export const buildActivityFeed = (claims = []) => {
+  return [...claims]
+    .sort(
+      (a, b) =>
+        new Date(b.created_at) -
+        new Date(a.created_at)
+    )
+    .slice(0, 6)
+    .map((claim) => {
+      const name =
+        claim.employee?.name || "An employee";
+
+      if (claim.status === "Approved") {
+        return {
+          icon: "✅",
+          iconClass: "activity-icon green",
+          text: `${name}'s claim approved`,
+          time: claim.updated_at || claim.created_at,
+        };
+      }
+
+      if (claim.status === "Rejected") {
+        return {
+          icon: "❌",
+          iconClass: "activity-icon",
+          text: `${name}'s claim rejected`,
+          time: claim.updated_at || claim.created_at,
+        };
+      }
+
+      return {
+        icon: "📝",
+        iconClass: "activity-icon",
+        text: `${name} submitted a claim`,
+        time: claim.created_at,
+      };
+    })
+    .slice(0, 5);
 };

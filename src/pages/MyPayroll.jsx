@@ -1,106 +1,204 @@
-import React from "react";
+// src/pages/MyPayroll.jsx
+import { useState } from "react";
 import Layout from "../components/Layout";
-import { usePayrollHistory } from "../hooks/usePayroll";
-import { formatZAR, formatDate } from "../utils/helpers";
+import { useQuery } from "@tanstack/react-query";
+import { payrollApi } from "../api/payrollApi";
+import { profileApi } from "../api/profileApi";
+import { QUERY_KEYS } from "../utils/queryKeys";
+import { formatZAR, formatDate, exportPDF } from "../utils/helpers";
+
+// ===== Sub-row =====
+const PayRow = ({ label, value, highlight }) => (
+  <div style={{
+    display:        "flex",
+    justifyContent: "space-between",
+    alignItems:     "center",
+    padding:        "10px 0",
+    borderBottom:   highlight ? "none" : "1px solid #f4f8fd",
+    background:     highlight ? "#eaf4ff" : "transparent",
+    margin:         highlight ? "8px -20px -20px" : 0,
+    padding:        highlight ? "12px 20px" : "10px 0",
+    borderRadius:   highlight ? "0 0 14px 14px" : 0,
+  }}>
+    <span style={{ fontSize: 13, color: highlight ? "#005bbb" : "#667085" }}>{label}</span>
+    <strong style={{ fontSize: highlight ? 16 : 14, color: highlight ? "#005bbb" : "#1d2939" }}>
+      {value}
+    </strong>
+  </div>
+);
 
 function MyPayroll() {
-  const { data: response, isLoading, isError } = usePayrollHistory();
+  const [selected, setSelected] = useState(null); // selected payroll record
 
-  const payrollList = response?.data || [];
+  // ===== Queries =====
+  const { data: records, isLoading } = useQuery({
+    queryKey: QUERY_KEYS.MY_PAYROLL,
+    queryFn:  payrollApi.getMyPayroll,
+    select:   (d) => d.data,
+  });
 
-  // Identify the most recent payroll transaction to highlight as the active summary block
-  const currentPayRun = payrollList[0] || null;
+  const { data: profile } = useQuery({
+    queryKey: QUERY_KEYS.PROFILE,
+    queryFn:  profileApi.getProfile,
+    select:   (d) => d.data,
+  });
 
-  if (isLoading) {
-    return (
-      <Layout>
-        <div className="p-8 text-center text-gray-500 font-medium">Loading safe space payslip dashboard...</div>
-      </Layout>
+  const latest  = selected ?? records?.[0] ?? null;
+  const emp     = profile?.employee;
+
+  // ===== PDF export =====
+  const handleDownload = (record) => {
+    const periodLabel = `${formatDate(record.pay_period_start)} – ${formatDate(record.pay_period_end)}`;
+    exportPDF(
+      `Payslip — ${emp?.name || "Employee"} — ${periodLabel}`,
+      `
+        <p><strong>Employee:</strong> ${emp?.name || "—"}</p>
+        <p><strong>ID:</strong> ${emp?.employee_id ? `EMP-${String(emp.employee_id).padStart(4,"0")}` : "—"}</p>
+        <p><strong>Period:</strong> ${periodLabel}</p>
+        <br/>
+        <table style="width:100%;font-size:14px">
+          <tr><td>Normal Pay</td><td align="right"><strong>${formatZAR(record.normal_pay)}</strong></td></tr>
+          <tr><td>Overtime Pay</td><td align="right"><strong>${formatZAR(record.overtime_pay)}</strong></td></tr>
+          <tr><td>Holiday Pay</td><td align="right"><strong>${formatZAR(record.holiday_pay)}</strong></td></tr>
+          <tr><td>Grave Shift Allowance</td><td align="right"><strong>${formatZAR(record.grave_allowance)}</strong></td></tr>
+          <tr style="font-size:16px;border-top:2px solid #006fd6">
+            <td><strong>Total Earnings</strong></td>
+            <td align="right"><strong>${formatZAR(record.total_pay)}</strong></td>
+          </tr>
+        </table>
+        <br/><p style="color:#98a2b3;font-size:11px">Generated: ${new Date().toLocaleDateString("en-ZA")} — NOC Roster & Claims Management System</p>
+      `
     );
-  }
-
-  if (isError) {
-    return (
-      <Layout>
-        <div className="p-8 text-center text-red-500 font-medium">Failed to read payroll history.</div>
-      </Layout>
-    );
-  }
+  };
 
   return (
     <Layout>
       <section className="content">
-        <div className="breadcrumb">Dashboard &gt; My Payroll History</div>
+        <div className="breadcrumb">Dashboard &gt; My Payroll</div>
 
-        {payrollList.length === 0 ? (
-          <div className="bg-white border p-6 rounded-lg text-center text-gray-500">
-            No payroll summaries or historical payslips generated for your profile yet.
+        <div className="page-title-row">
+          <div>
+            <h2>My Payroll</h2>
+            <p className="subtitle">View your payslips and earnings history.</p>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <p style={{ color: "#667085", fontSize: 13 }}>Loading payroll records...</p>
+        ) : !records?.length ? (
+          <div style={{ textAlign: "center", padding: "48px 0", color: "#667085" }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>💰</div>
+            <p style={{ fontSize: 14, fontWeight: 700, margin: "0 0 6px" }}>No payroll records yet</p>
+            <p style={{ fontSize: 13 }}>Your payslips will appear here once payroll is generated by admin.</p>
           </div>
         ) : (
           <div className="payroll-grid">
-            
-            {/* 1. Left Side: Highlight Card displaying active breakdown metrics */}
-            <div className="payroll-summary-card">
-              <h3>
-                Period Breakdown: <span className="text-sm font-normal text-gray-500">({currentPayRun.pay_period_start} to {currentPayRun.pay_period_end})</span>
-              </h3>
 
-              <div className="payroll-row mt-4">
-                <span>Normal Worked Pay</span>
-                <strong>{formatZAR(currentPayRun.normal_pay)}</strong>
+            {/* ===== Summary Card ===== */}
+            <div className="payroll-summary-card" style={{ borderRadius: 14, padding: 20 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+                <h3 style={{ margin: 0, color: "#005bbb" }}>
+                  {latest
+                    ? `${formatDate(latest.pay_period_start)} – ${formatDate(latest.pay_period_end)}`
+                    : "—"}
+                </h3>
+                {latest && (
+                  <button
+                    onClick={() => handleDownload(latest)}
+                    style={{
+                      background: "#006fd6", color: "white",
+                      border: "none", borderRadius: 8,
+                      padding: "6px 14px", fontSize: 12,
+                      fontWeight: 700, cursor: "pointer",
+                    }}
+                  >
+                    ⬇ PDF
+                  </button>
+                )}
               </div>
 
-              <div className="payroll-row">
-                <span>Overtime Component (1.5x)</span>
-                <strong>{formatZAR(currentPayRun.overtime_pay)}</strong>
-              </div>
+              {latest ? (<>
+                <PayRow label="Normal Pay"           value={formatZAR(latest.normal_pay)}     />
+                <PayRow label="Overtime Pay (×1.5)"  value={formatZAR(latest.overtime_pay)}   />
+                <PayRow label="Holiday Pay"          value={formatZAR(latest.holiday_pay)}    />
+                <PayRow label="Grave Shift Allowance" value={formatZAR(latest.grave_allowance)} />
+                <PayRow label="Total Earnings"       value={formatZAR(latest.total_pay)} highlight />
+              </>) : (
+                <p style={{ color: "#667085", fontSize: 13 }}>Select a payslip to view details.</p>
+              )}
 
-              <div className="payroll-row">
-                <span>Holiday Premium Allocation (2.0x)</span>
-                <strong>{formatZAR(currentPayRun.holiday_pay)}</strong>
-              </div>
-
-              <div className="payroll-row">
-                <span>Grave Shift Allowance Premium</span>
-                <strong>{formatZAR(currentPayRun.grave_allowance)}</strong>
-              </div>
-
-              <div className="payroll-total border-t pt-2 mt-2">
-                <span>Total Gross Earnings</span>
-                <strong className="text-green-700 text-lg">{formatZAR(currentPayRun.total_pay)}</strong>
-              </div>
-
-              <p className="roster-note mt-4">
-                Note: Standard statutory deductions and tax allocations are applied to final net transactions during deposit handling.
-              </p>
+              {latest && (
+                <p className="roster-note" style={{ marginTop: 12 }}>
+                  Generated: {formatDate(latest.generated_at || latest.createdAt)}
+                </p>
+              )}
             </div>
 
-            {/* 2. Right Side: History List Collection mapping into download buttons */}
-            <div className="payslip-card">
-              <h3>Historical Payslip Downloads</h3>
-              <div className="space-y-2 mt-4 max-h-[400px] overflow-y-auto pr-1">
-                {payrollList.map((item) => (
-                  <div className="payslip-item flex justify-between items-center border p-3 rounded-lg hover:bg-gray-50 transition-colors" key={item.payroll_id}>
-                    <div>
-                      <strong className="block text-gray-800 text-sm">
-                        End Date: {formatDate(item.pay_period_end)}
+            {/* ===== Payslip History ===== */}
+            <div className="payslip-card" style={{ borderRadius: 14, padding: 20 }}>
+              <h3 style={{ margin: "0 0 16px", color: "#1d2939" }}>Payslip History</h3>
+
+              {records.map((record) => {
+                const isActive = record.payroll_id === latest?.payroll_id;
+                return (
+                  <div
+                    key={record.payroll_id}
+                    className="payslip-item"
+                    onClick={() => setSelected(record)}
+                    style={{
+                      cursor:       "pointer",
+                      background:   isActive ? "#eaf4ff" : "white",
+                      border:       `1px solid ${isActive ? "#006fd6" : "#e6edf5"}`,
+                      borderRadius: 10,
+                      padding:      "12px 14px",
+                      marginBottom: 8,
+                      transition:   "all 0.15s",
+                    }}
+                  >
+                    <div style={{ flex: 1 }}>
+                      <strong style={{ fontSize: 13, color: "#1d2939" }}>
+                        {formatDate(record.pay_period_start)} – {formatDate(record.pay_period_end)}
                       </strong>
-                      <span className="text-blue-600 font-semibold text-sm">{formatZAR(item.total_pay)}</span>
-                      <small className="block text-gray-400 text-xs">Period Start: {item.pay_period_start}</small>
+                      <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
+                        <span style={{ fontSize: 12, color: "#667085" }}>
+                          Normal: {formatZAR(record.normal_pay)}
+                        </span>
+                        {Number(record.overtime_pay) > 0 && (
+                          <span style={{ fontSize: 12, color: "#b54708" }}>
+                            OT: {formatZAR(record.overtime_pay)}
+                          </span>
+                        )}
+                        {Number(record.holiday_pay) > 0 && (
+                          <span style={{ fontSize: 12, color: "#7a3aed" }}>
+                            Hol: {formatZAR(record.holiday_pay)}
+                          </span>
+                        )}
+                      </div>
                     </div>
-
-                    <button 
-                      onClick={() => alert(`Initiating secure local device PDF export sequence for Row Entry #${item.payroll_id}...`)}
-                      className="download-btn bg-blue-50 text-blue-600 hover:bg-blue-100 p-2 rounded-full transition-colors"
-                      title="Download compliance payslip statement"
-                    >
-                      ⬇
-                    </button>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+                      <strong style={{ fontSize: 14, color: "#006fd6" }}>
+                        {formatZAR(record.total_pay)}
+                      </strong>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDownload(record); }}
+                        style={{
+                          background:   "#f4f8fd",
+                          border:       "1px solid #e6edf5",
+                          borderRadius: 6,
+                          padding:      "3px 10px",
+                          fontSize:     12,
+                          cursor:       "pointer",
+                          color:        "#006fd6",
+                          fontWeight:   700,
+                        }}
+                      >
+                        ⬇ PDF
+                      </button>
+                    </div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
-
           </div>
         )}
       </section>
