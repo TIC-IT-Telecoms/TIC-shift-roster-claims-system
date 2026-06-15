@@ -1,5 +1,5 @@
 export const QUERY_KEYS = {
-  
+
   AUTH: ['auth'],
 
   EMPLOYEES: ['employees'],
@@ -27,6 +27,11 @@ export const QUERY_KEYS = {
   CLAIMS: (params) => ['claims', params],
   MY_CLAIMS: (params) => ['claims', 'me', params],
   CLAIM: (id) => ['claims', id],
+
+  PAYROLLS: (params) => ['payroll', params],
+  PAYROLL: (id) => ['payroll', id],
+  MY_PAYROLL: ['payroll', 'me'],
+  PAYROLL_PREVIEW: (params) => ['payroll', 'preview', params],
 
   PROFILE: ['profile'],
 

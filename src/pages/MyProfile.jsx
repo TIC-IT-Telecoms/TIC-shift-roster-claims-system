@@ -4,10 +4,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { profileApi } from "../api/profileApi";
 import { QUERY_KEYS } from "../utils/queryKeys";
 import {
-  formatDate,
-  formatRole,
+  formatDate, formatRole,
   formatSupervisor,
-  getInitials,
+  getInitials, formatDateTime
 } from "../utils/helpers";
 
 // ===== Shared input style helper =====
@@ -266,7 +265,7 @@ function MyProfile() {
             <InfoItem label="Last Login">
               <strong>
                 {user?.last_login
-                  ? new Date(user.last_login).toLocaleString("en-ZA")
+                  ? formatDateTime(user.last_login)
                   : "—"}
               </strong>
             </InfoItem>

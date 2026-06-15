@@ -59,7 +59,7 @@ function Layout({ children }) {
               <NavLink to="/profile">👤 My Profile</NavLink>
               <NavLink to="/roster">📅 My Roster</NavLink>
               <NavLink to="/claims">📋 My Claims</NavLink>
-              <NavLink to="/approvals">✅ My Approvals</NavLink>
+              {/* <NavLink to="/approvals">✅ My Approvals</NavLink> */}
               <NavLink to="/payroll">💰 My Payroll</NavLink>
               <NavLink to="/reports">📊 My Reports</NavLink>
               <NavLink to="/notifications">🔔 Notifications</NavLink>
