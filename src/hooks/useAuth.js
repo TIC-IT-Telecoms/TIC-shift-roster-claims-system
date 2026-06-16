@@ -44,3 +44,33 @@ export const useLogout = () => {
     },
   });
 };
+
+/**
+ * Hook to handle requesting a reset email link
+ */
+export const useForgotPassword = () => {
+  return useMutation({
+    mutationFn: (email) => authApi.forgotPassword(email),
+    onSuccess: (data) => {
+      // Handle global logs or contextual analytical tracking metrics here if needed
+    },
+    onError: (err) => {
+      console.error("Forgot password mutation failed:", err);
+    },
+  });
+};
+
+/**
+ * Hook to execute and save the new account credentials payload
+ */
+export const useResetPassword = () => {
+  return useMutation({
+    mutationFn: (resetPayload) => authApi.resetPassword(resetPayload),
+    onSuccess: (data) => {
+      // Successfully updated credentials contract handled globally
+    },
+    onError: (err) => {
+      console.error("Reset password mutation failed:", err);
+    },
+  });
+};
