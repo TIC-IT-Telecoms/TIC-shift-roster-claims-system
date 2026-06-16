@@ -239,9 +239,6 @@ function MyRoster() {
                       <td>{formatDay(entry.roster_date)}</td>
                       <td>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          {/* {isHoliday && (
-                            <span style={{ fontSize: 12 }}>🌟</span>
-                          )} */}
                           {getShiftName(entry)}
                         </div>
                       </td>
@@ -252,8 +249,8 @@ function MyRoster() {
                       <td>
                         <span className={getStatusClass(entry)}>
                           {entry.is_public_holiday
-  ? "Holiday 🎉"
-  : entry.status}
+                            ? "Holiday 🎉"
+                            : entry.status}
                         </span>
                       </td>
                     </tr>
@@ -267,7 +264,7 @@ function MyRoster() {
           <div className="shift-legend" style={{ marginTop: 16 }}>
             <span>
               <b className="legend-early" />
-              Day (06:00–14:00)
+              Early (06:00–14:00)
             </span>
             <span>
               <b className="legend-night" />
@@ -280,6 +277,10 @@ function MyRoster() {
             <span>
               <b className="legend-off" />
               Off Day
+            </span>
+            <span>
+              <b className="legend-holiday" />
+              Holidays
             </span>
           </div>
 

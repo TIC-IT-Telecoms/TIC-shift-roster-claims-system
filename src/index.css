@@ -1544,6 +1544,10 @@ textarea {
   background: #FFA500;
 }
 
+.legend-holiday {
+  background: #7a3aed;
+}
+
 .legend-off {
   background: #FF0000;
 }

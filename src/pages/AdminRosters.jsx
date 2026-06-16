@@ -6,12 +6,8 @@ import { rotationApi } from "../api/rotationApi";
 import { teamApi } from "../api/teamApi";
 import { QUERY_KEYS } from "../utils/queryKeys";
 import {
-  getTodayStr,
-  getWeekDates,
-  formatRangeLabel,
-  formatHeader,
-  getShiftCell,
-  buildTeamRosterMap,
+  getTodayStr, getWeekDates, formatRangeLabel,
+  formatHeader, getShiftCell, buildTeamRosterMap,
 } from "../utils/helpers";
 
 const todayStr = getTodayStr();
@@ -326,32 +322,32 @@ function DeleteRangeModal({ teams, onClose, onSuccess }) {
 function AdminRosters() {
   const qc = useQueryClient();
 
-  const [offset,        setOffset]        = useState(0);
-  const [teamFilter,    setTeamFilter]     = useState("");
-  const [showGenModal,  setShowGenModal]   = useState(false);
-  const [showDelModal,  setShowDelModal]   = useState(false);
-  const [genResult,     setGenResult]      = useState(null);
-  const [delResult,     setDelResult]      = useState(null);
+  const [offset, setOffset] = useState(0);
+  const [teamFilter, setTeamFilter] = useState("");
+  const [showGenModal, setShowGenModal] = useState(false);
+  const [showDelModal, setShowDelModal] = useState(false);
+  const [genResult, setGenResult] = useState(null);
+  const [delResult, setDelResult] = useState(null);
 
   const weekDates = getWeekDates(offset);
-  const range     = { start_date: weekDates[0], end_date: weekDates[6] };
+  const range = { start_date: weekDates[0], end_date: weekDates[6] };
 
   // ===== Queries =====
   const { data: rosterData, isLoading } = useQuery({
     queryKey: QUERY_KEYS.ROSTERS({ ...range, ...(teamFilter ? { team_id: teamFilter } : {}) }),
-    queryFn:  () => rosterApi.getAll({ ...range, ...(teamFilter ? { team_id: teamFilter } : {}) }),
-    select:   (d) => d.data,
+    queryFn: () => rosterApi.getAll({ ...range, ...(teamFilter ? { team_id: teamFilter } : {}) }),
+    select: (d) => d.data,
   });
 
   const { data: teams } = useQuery({
     queryKey: QUERY_KEYS.TEAMS,
-    queryFn:  teamApi.getAll,
-    select:   (d) => d.data,
+    queryFn: teamApi.getAll,
+    select: (d) => d.data,
   });
 
   // ===== Derived =====
   const teamRosterMap = buildTeamRosterMap(rosterData);
-  const teamNames     = Object.keys(teamRosterMap).sort();
+  const teamNames = Object.keys(teamRosterMap).sort();
 
   const allEntries = rosterData?.roster
     ? Object.values(rosterData.roster).flat()
@@ -532,7 +528,7 @@ function AdminRosters() {
                       return (
                         <td key={date} style={isToday ? { background: "#f0f7ff" } : {}}>
                           <span style={style}>
-                            {entry?.is_public_holiday && label !== "Off" ? `🌟 ${label}` : label}
+                            {entry?.is_public_holiday && label !== "Off" ? `${label}` : label}
                           </span>
                         </td>
                       );
@@ -544,11 +540,11 @@ function AdminRosters() {
           )}
 
           <div className="shift-legend" style={{ marginTop: 16 }}>
-            <span><b className="legend-early" /> Day (06–14)</span>
+            <span><b className="legend-early" /> Early (06–14)</span>
             <span><b className="legend-night" /> Night (14–22)</span>
             <span><b className="legend-grave" /> Grave (22–06)</span>
             <span><b className="legend-off" /> Day Off</span>
-            <span >🌟 Holiday-flagged</span>
+            <span><b className="legend-holiday" /> Holiday-flagged</span>
           </div>
 
           <p className="roster-note">Note: Roster is subject to change. Please check regularly.</p>

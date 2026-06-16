@@ -1,12 +1,21 @@
-import api from './axiosInstance.js';
+import api from './axiosInstance';
 
 export const complianceApi = {
-  // GET /api/compliance -> Fetches flags (filtered optionally by resolution status)
-  getFlags: (params) => api.get('/compliance', { params }),
+  /** Run check for one employee */
+  check: (data)    => api.post('/compliance/check', data),
 
-  // POST /api/compliance/check -> Triggers the automated BCEA compliance engine check
-  checkCompliance: (payload) => api.post('/compliance/check', payload),
+  /** Run bulk check for all employees */
+  checkAll: (data) => api.post('/compliance/check-all', data),
 
-  // PATCH /api/compliance/:id/resolve -> Resolves an active flag
-  resolveFlag: (id) => api.patch(`/compliance/${id}/resolve`),
+  /** Get all flags (admin) or own flags (employee) */
+  getAll: (params) => api.get('/compliance', { params }),
+
+  /** Get own flags (employee) */
+  getMine: ()      => api.get('/compliance/me'),
+
+  /** Resolve a flag */
+  resolve: (id, notes) => api.patch(`/compliance/${id}/resolve`, { notes }),
+
+  /** Delete a flag (admin) */
+  delete: (id)     => api.delete(`/compliance/${id}`),
 };
