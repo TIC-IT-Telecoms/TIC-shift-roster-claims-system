@@ -155,31 +155,55 @@ function Employees() {
         )}
 
         {/* ===== Toolbar ===== */}
-        <div className="employee-toolbar">
-          <input
-            placeholder="Search by name, email or ID..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 bg-white p-3 rounded-xl shadow-sm border border-gray-200">
+
+          {/* Search */}
+          <div className="relative flex-1">
+            <input
+              placeholder="Search by name, email or ID..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-3 py-2.5 text-sm border border-gray-300 rounded-lg 
+                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                 placeholder-gray-400"
+            />
+            <svg
+              className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+            >
+              <path d="M21 21l-4.35-4.35m1.85-5.65a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+
+          {/* Status Filter */}
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="filter-btn"
-            style={{ cursor: "pointer" }}
+            className="w-full sm:w-auto px-3 py-2.5 text-sm border border-gray-300 rounded-lg
+               bg-white cursor-pointer
+               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">All Status</option>
             <option value="Active">Active</option>
             <option value="Inactive">Inactive</option>
           </select>
+
+          {/* Team Filter */}
           <select
             value={teamFilter}
             onChange={(e) => setTeamFilter(e.target.value)}
-            className="filter-btn"
-            style={{ cursor: "pointer" }}
+            className="w-full sm:w-auto px-3 py-2.5 text-sm border border-gray-300 rounded-lg
+               bg-white cursor-pointer
+               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">All Teams</option>
             {teams?.map((t) => (
-              <option key={t.team_id} value={t.team_id}>{t.team_name}</option>
+              <option key={t.team_id} value={t.team_id}>
+                {t.team_name}
+              </option>
             ))}
           </select>
         </div>

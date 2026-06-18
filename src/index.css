@@ -1417,7 +1417,7 @@ body {
 
 .employee-toolbar {
   display: flex;
-  justify-content: space-between;
+  justify-content: left;
   gap: 12px;
   margin-bottom: 14px;
 }

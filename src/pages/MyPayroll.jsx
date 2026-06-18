@@ -1,4 +1,3 @@
-// src/pages/MyPayroll.jsx
 import { useState } from "react";
 import Layout from "../components/Layout";
 import { useQuery } from "@tanstack/react-query";
@@ -10,15 +9,15 @@ import { formatZAR, formatDate, exportPDF } from "../utils/helpers";
 // ===== Sub-row =====
 const PayRow = ({ label, value, highlight }) => (
   <div style={{
-    display:        "flex",
+    display: "flex",
     justifyContent: "space-between",
-    alignItems:     "center",
-    padding:        "10px 0",
-    borderBottom:   highlight ? "none" : "1px solid #f4f8fd",
-    background:     highlight ? "#eaf4ff" : "transparent",
-    margin:         highlight ? "8px -20px -20px" : 0,
-    padding:        highlight ? "12px 20px" : "10px 0",
-    borderRadius:   highlight ? "0 0 14px 14px" : 0,
+    alignItems: "center",
+    padding: "10px 0",
+    borderBottom: highlight ? "none" : "1px solid #f4f8fd",
+    background: highlight ? "#eaf4ff" : "transparent",
+    margin: highlight ? "8px -20px -20px" : 0,
+    padding: highlight ? "12px 20px" : "10px 0",
+    borderRadius: highlight ? "0 0 14px 14px" : 0,
   }}>
     <span style={{ fontSize: 13, color: highlight ? "#005bbb" : "#667085" }}>{label}</span>
     <strong style={{ fontSize: highlight ? 16 : 14, color: highlight ? "#005bbb" : "#1d2939" }}>
@@ -28,7 +27,7 @@ const PayRow = ({ label, value, highlight }) => (
 );
 
 function MyPayroll() {
-  const [selected, setSelected] = useState(null); // selected payroll record
+  const [selected, setSelected] = useState(null);
 
   // ===== Queries =====
   const { data: records, isLoading } = useQuery({
@@ -43,8 +42,8 @@ function MyPayroll() {
     select:   (d) => d.data,
   });
 
-  const latest  = selected ?? records?.[0] ?? null;
-  const emp     = profile?.employee;
+  const latest = selected ?? records?.[0] ?? null;
+  const emp = profile?.employee;
 
   // ===== PDF export =====
   const handleDownload = (record) => {
@@ -118,11 +117,11 @@ function MyPayroll() {
               </div>
 
               {latest ? (<>
-                <PayRow label="Normal Pay"           value={formatZAR(latest.normal_pay)}     />
+                <PayRow label="Normal Pay" value={formatZAR(latest.normal_pay)}     />
                 <PayRow label="Overtime Pay (×1.5)"  value={formatZAR(latest.overtime_pay)}   />
-                <PayRow label="Holiday Pay"          value={formatZAR(latest.holiday_pay)}    />
+                <PayRow label="Holiday Pay"  value={formatZAR(latest.holiday_pay)}    />
                 <PayRow label="Grave Shift Allowance" value={formatZAR(latest.grave_allowance)} />
-                <PayRow label="Total Earnings"       value={formatZAR(latest.total_pay)} highlight />
+                <PayRow label="Total Earnings" value={formatZAR(latest.total_pay)} highlight />
               </>) : (
                 <p style={{ color: "#667085", fontSize: 13 }}>Select a payslip to view details.</p>
               )}
@@ -146,13 +145,13 @@ function MyPayroll() {
                     className="payslip-item"
                     onClick={() => setSelected(record)}
                     style={{
-                      cursor:       "pointer",
-                      background:   isActive ? "#eaf4ff" : "white",
-                      border:       `1px solid ${isActive ? "#006fd6" : "#e6edf5"}`,
+                      cursor: "pointer",
+                      background: isActive ? "#eaf4ff" : "white",
+                      border: `1px solid ${isActive ? "#006fd6" : "#e6edf5"}`,
                       borderRadius: 10,
-                      padding:      "12px 14px",
+                      padding: "12px 14px",
                       marginBottom: 8,
-                      transition:   "all 0.15s",
+                      transition: "all 0.15s",
                     }}
                   >
                     <div style={{ flex: 1 }}>
@@ -182,14 +181,14 @@ function MyPayroll() {
                       <button
                         onClick={(e) => { e.stopPropagation(); handleDownload(record); }}
                         style={{
-                          background:   "#f4f8fd",
-                          border:       "1px solid #e6edf5",
+                          background: "#f4f8fd",
+                          border: "1px solid #e6edf5",
                           borderRadius: 6,
-                          padding:      "3px 10px",
-                          fontSize:     12,
-                          cursor:       "pointer",
-                          color:        "#006fd6",
-                          fontWeight:   700,
+                          padding: "3px 10px",
+                          fontSize: 12,
+                          cursor: "pointer",
+                          color: "#006fd6",
+                          fontWeight: 700,
                         }}
                       >
                         ⬇ PDF
