@@ -20,8 +20,6 @@ const inp = {
 };
 
 // ===== Generate Modal =====
-// NOTE: default_shift_id removed — backend assigns rotation shift on holidays,
-//       is_public_holiday is a flag only. No shift override on holidays.
 function GenerateModal({ onClose, onSuccess }) {
   const [form, setForm] = useState({
     rotation_ids: [], start_date: "", end_date: "",
@@ -140,7 +138,7 @@ function GenerateModal({ onClose, onSuccess }) {
 
           {/* Info note */}
           <div style={{ background: "#eaf4ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#006fd6" }}>
-            ℹ️ Holiday pay is applied automatically via the public holiday calendar. Employees work their rostered shift on all dates.
+            ℹ️ <strong>Important:</strong> Review upcoming public holidays before generating the roster. The system applies premium rates automatically based on the calendar and your scheduled shifts.
           </div>
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 4 }}>

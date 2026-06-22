@@ -64,7 +64,7 @@ const getShiftName = (entry) => {
 
   // Normal Off Day
   if (entry.status === "Off") {
-    return "Off Day";
+    return "Day Off";
   }
 
   return entry.shift?.shift_name || "—";
@@ -261,7 +261,7 @@ function MyRoster() {
           )}
 
           {/* ===== Shift Legend ===== */}
-          <div className="shift-legend" style={{ marginTop: 16 }}>
+          {/* <div className="shift-legend" style={{ marginTop: 16 }}>
             <span>
               <b className="legend-early" />
               Early (06:00–14:00)
@@ -282,7 +282,7 @@ function MyRoster() {
               <b className="legend-holiday" />
               Holidays
             </span>
-          </div>
+          </div> */}
 
           <p className="roster-note">
             Note: Roster is subject to change. Please check regularly.
