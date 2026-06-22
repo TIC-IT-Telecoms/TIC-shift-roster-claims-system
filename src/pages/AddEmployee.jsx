@@ -103,8 +103,8 @@ function AddEmployee({ employee, teams, employees, onClose, onSuccess }) {
 
   // Admins only as supervisors, exclude self
 const supervisors = (employees || []).filter((e) => {
-  const supervisor = employees.find((s) => s.employee_id === e.supervisor_id);
-  return ((e.role === "Admin" || supervisor?.role === "Admin") &&
+  // const supervisor = employees.find((s) => s.employee_id === e.supervisor_id); //|| supervisor?.role === "Admin"
+  return (e.role === "Admin" &&
     e.employee_id !== employee?.employee_id
   );
 });

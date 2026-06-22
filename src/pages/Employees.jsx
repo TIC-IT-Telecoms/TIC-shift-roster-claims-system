@@ -28,14 +28,13 @@ function Employees() {
   const [showModal, setShowModal] = useState(false);
   const [editEmployee, setEditEmployee] = useState(null);
   const [successMsg, setSuccessMsg] = useState(location.state?.success || "");
+  const [errorMsg, setErrorMsg] = useState(location.state?.error || "");
   const [confirmingEmp, setConfirmingEmp] = useState(null);
 
   // Clear location state success message after reading
   useEffect(() => {
-    if (location.state?.success) {
+    if (location.state?.success || location.state?.error) {
       window.history.replaceState({}, "");
-      const t = setTimeout(() => setSuccessMsg(""), 3000);
-      return () => clearTimeout(t);
     }
   }, []);
 
@@ -46,6 +45,13 @@ function Employees() {
       return () => clearTimeout(t);
     }
   }, [successMsg]);
+
+  useEffect(() => {
+    if (errorMsg) {
+      const t = setTimeout(() => setErrorMsg(""), 5000);
+      return () => clearTimeout(t);
+    }
+  }, [errorMsg]);
 
   // ===== Queries =====
   const { data: employees, isLoading } = useQuery({
@@ -67,7 +73,7 @@ function Employees() {
       qc.invalidateQueries({ queryKey: QUERY_KEYS.EMPLOYEES });
       setSuccessMsg("Employee deactivated successfully.");
     },
-    onError: (err) => alert(err.message),
+    onError: (err) => handleModalError(err.message),
   });
 
   const activate = useMutation({
@@ -76,7 +82,7 @@ function Employees() {
       qc.invalidateQueries({ queryKey: QUERY_KEYS.EMPLOYEES });
       setSuccessMsg("Employee activated successfully.");
     },
-    onError: (err) => alert(err.message),
+    onError: (err) => handleModalError(err.message),
   });
 
   const handleDeactivate = (emp) => {
@@ -106,6 +112,11 @@ function Employees() {
   const handleModalSuccess = (msg) => {
     closeModal();
     setSuccessMsg(msg);
+  };
+
+  const handleModalError = (msg) => {
+    closeModal();
+    setErrorMsg(msg);
   };
 
   // ===== Filter =====
@@ -151,6 +162,18 @@ function Employees() {
             borderRadius: 8, marginBottom: 16, fontSize: 13,
           }}>
             ✓ {successMsg}
+          </div>
+        )}
+
+        {/* Error Alert Banner */}
+        {errorMsg && (
+          <div style={{
+            background: "#fdf2f2", border: "1px solid #fecaca",
+            color: "#b91c1c", padding: "10px 16px",
+            borderRadius: 8, marginBottom: 16, fontSize: 13,
+            display: "flex", alignItems: "center", gap: 8
+          }}>
+            ⚠️ {errorMsg}
           </div>
         )}
 
@@ -328,18 +351,6 @@ function Employees() {
           />
         )}
 
-        {/* ===== Confirmation Modal ===== */}
-        {confirmingEmp && (
-          <ConfirmationModal
-            title={`⚠️ ${confirmingEmp.status === "Active" ? "Deactivate" : "Activate"} Employee`}
-            message={`Are you sure you want to ${confirmingEmp.status === "Active" ? "deactivate" : "activate"} "${confirmingEmp.name}"?`}
-            confirmText={confirmingEmp.status === "Active" ? "Deactivate" : "Activate"}
-            confirmColor={confirmingEmp.status === "Active" ? "#dc2626" : "#4caf50"}
-            isPending={deactivate.isPending || activate.isPending}
-            onConfirm={confirmingEmp.status === "Active" ? confirmDeactivate : confirmActivate}
-            onClose={() => setConfirmingEmp(null)}
-          />
-        )}
         {/* ===== Confirmation Modal ===== */}
         {confirmingEmp && (
           <ConfirmationModal
