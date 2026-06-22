@@ -173,7 +173,7 @@ function Employees() {
             borderRadius: 8, marginBottom: 16, fontSize: 13,
             display: "flex", alignItems: "center", gap: 8
           }}>
-            ⚠️ {errorMsg}
+            ✕ {errorMsg}
           </div>
         )}
 
