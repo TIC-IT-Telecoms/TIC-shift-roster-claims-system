@@ -188,7 +188,7 @@ return (
           </div>
 
           {/* Activity Feed */}
-          <div className="panel">
+          {/* <div className="panel">
             <div className="panel-header">
               <h3>Recent Activity</h3>
               <a
@@ -214,7 +214,7 @@ return (
                 ))}
               </ul>
             )}
-          </div>
+          </div> */}
         </div>
 
         {/* ===== Right: Notifications + Holidays ===== */}

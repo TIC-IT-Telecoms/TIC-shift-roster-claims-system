@@ -1,3 +1,4 @@
+// src/pages/SubmitClaim.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
@@ -29,26 +30,109 @@ const StatusBadge = ({ status }) => {
 };
 
 // ===== Holiday check — NEVER throws =====
-// Returns the holiday object if the date is a holiday, otherwise null.
-// Handles 404, 500, network errors, and JSON parse errors silently.
 const checkHolidayApi = async (dateStr) => {
   try {
-    const res = await fetch(`/api/holidays/check/${dateStr}`, {
-      credentials: "include",
-    });
-    if (!res.ok) return null;               // endpoint 404/500 → treat as no holiday
+    const res = await fetch(`/api/holidays/check/${dateStr}`, { credentials: "include" });
+    if (!res.ok) return null;
     const json = await res.json();
     return json?.data?.is_holiday ? json.data.holiday : null;
   } catch {
-    return null;                            // network error or parse error → no holiday
+    return null;
   }
 };
 
-// ===== Next calendar day =====
 const getNextDay = (dateStr) => {
   const d = new Date(dateStr);
   d.setDate(d.getDate() + 1);
   return d.toISOString().split("T")[0];
+};
+
+const getYesterday = () => {
+  const d = new Date(getTodayStr());
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().split("T")[0];
+};
+
+// ===== Parse "HH:MM" → minutes since midnight =====
+const toMinutes = (timeStr) => {
+  const [h, m] = (timeStr || "00:00").split(":").map(Number);
+  return h * 60 + m;
+};
+
+const checkShiftAvailability = (shift, claimDate) => {
+  if (!shift || !claimDate) return { blocked: false };
+
+  const todayD     = getTodayStr();
+  const yesterdayD = getYesterday();
+
+  // Past dates (before yesterday) are always claimable
+  if (claimDate < yesterdayD) return { blocked: false };
+
+  const now    = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+
+  if (shift.is_grave) {
+    const startMin = toMinutes(shift.start_time || "22:00");
+    const endMin   = toMinutes(shift.end_time   || "06:00"); // next day
+
+    if (claimDate === todayD) {
+      if (nowMin < startMin) {
+        // Shift hasn't started yet — e.g. it's 18:00 and shift starts at 22:00
+        return {
+          blocked:  true,
+          reason:   "not_started",
+          startsAt: `${shift.start_time?.slice(0, 5) || "22:00"} today`,
+        };
+      }
+      // nowMin >= startMin: shift has started, running overnight until 06:00 tomorrow
+      return {
+        blocked: true,
+        reason:  "in_progress",
+        endsAt:  `${shift.end_time?.slice(0, 5) || "06:00"} tomorrow`,
+      };
+    }
+
+    if (claimDate === yesterdayD) {
+      // We're the morning after the grave shift started
+      if (nowMin < endMin) {
+        // Still before 06:00 — shift is still running
+        return {
+          blocked: true,
+          reason:  "in_progress",
+          endsAt:  `${shift.end_time?.slice(0, 5) || "06:00"} today`,
+        };
+      }
+      // 06:00 or later — shift has ended, claim allowed
+      return { blocked: false };
+    }
+
+    return { blocked: false };
+  }
+
+  // ── Non-grave shift ──────────────────────────────────────────────────────
+  // Only the claim date === today matters; past dates are already allowed above
+  if (claimDate !== todayD) return { blocked: false };
+
+  const startMin = toMinutes(shift.start_time || "00:00");
+  const endMin   = toMinutes(shift.end_time   || "00:00");
+
+  if (nowMin < startMin) {
+    return {
+      blocked:  true,
+      reason:   "not_started",
+      startsAt: `${shift.start_time?.slice(0, 5)} today`,
+    };
+  }
+
+  if (nowMin < endMin) {
+    return {
+      blocked: true,
+      reason:  "in_progress",
+      endsAt:  `${shift.end_time?.slice(0, 5)} today`,
+    };
+  }
+
+  return { blocked: false };
 };
 
 function SubmitClaim() {
@@ -70,7 +154,7 @@ function SubmitClaim() {
   const [error,          setError]          = useState("");
   const [success,        setSuccess]        = useState("");
 
-  // ===== Fetch profile for hourly rate =====
+  // ===== Fetch profile =====
   const { data: profile } = useQuery({
     queryKey: QUERY_KEYS.PROFILE,
     queryFn:  profileApi.getProfile,
@@ -86,7 +170,7 @@ function SubmitClaim() {
     select:   (d) => d.data?.slice(0, 5),
   });
 
-  // ===== When date changes: fetch roster then holidays independently =====
+  // ===== When date changes: fetch roster + holidays =====
   useEffect(() => {
     if (!form.claim_date) return;
 
@@ -95,18 +179,13 @@ function SubmitClaim() {
       setRosterEntry(null);
       setHolidayInfo(null);
       setNextDayHoliday(null);
-      // ← do NOT clear error here; only clear on submit
 
-      // ── Step 1: Roster ───────────────────────────────────────────────────
-      // A missing roster is a VALID state (shows the "no roster" banner).
-      // An API error here is also non-fatal — we just show the no-roster banner.
       let entry = null;
       try {
         const rosterRes = await rosterApi.getMyRoster({
           start_date: form.claim_date,
           end_date:   form.claim_date,
         });
-
         const raw = rosterRes?.data?.roster || [];
         entry = Array.isArray(raw)
           ? raw[0] ?? null
@@ -114,21 +193,16 @@ function SubmitClaim() {
 
         setRosterEntry(entry);
 
-        // Auto-fill shift type from roster when it matches a known type
         if (entry?.shift?.shift_name && SHIFT_TYPES.includes(entry.shift.shift_name)) {
           setForm((f) => ({ ...f, shift_type: entry.shift.shift_name }));
         }
       } catch {
-        // Roster not found or API down — show banner, don't crash or set error
         setRosterEntry(null);
       }
 
-      // ── Step 2: Holiday checks ───────────────────────────────────────────
-      // checkHolidayApi never throws — returns null on any failure.
       const todayHol = await checkHolidayApi(form.claim_date);
       setHolidayInfo(todayHol);
 
-      // Check next day only for grave shifts (overnight crosses midnight)
       if (entry?.shift?.is_grave) {
         const nextDayHol = await checkHolidayApi(getNextDay(form.claim_date));
         setNextDayHoliday(nextDayHol);
@@ -158,13 +232,22 @@ function SubmitClaim() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    setError(""); // ← clear only on submit attempt
+    setError("");
 
     if (!form.shift_type) {
       setError("Please select a shift type."); return;
     }
     if (!form.hours_worked || Number(form.hours_worked) <= 0) {
       setError("Hours worked must be greater than 0."); return;
+    }
+
+    // Guard: shift timing check (keyboard / programmatic bypass protection)
+    if (shiftStatus.blocked) {
+      const msg = shiftStatus.reason === "not_started"
+        ? `Your shift has not started yet. It starts at ${shiftStatus.startsAt}.`
+        : `Your shift is still in progress. You can submit after ${shiftStatus.endsAt}.`;
+      setError(msg);
+      return;
     }
 
     submitMutation.mutate({
@@ -176,22 +259,38 @@ function SubmitClaim() {
     });
   };
 
-  // ===== Live earnings preview =====
+  // ===== Derived state =====
+  const isOff       = rosterEntry?.status === "Off";
+  const rosterShift = rosterEntry?.shift?.shift_name;
+  const isGrave     = rosterEntry?.shift?.is_grave;
+
+  const shiftStatus  = checkShiftAvailability(rosterEntry?.shift ?? null, form.claim_date);
+  const submitBlocked = submitMutation.isPending || isOff || shiftStatus.blocked;
+
+  // Button label
+  const submitLabel = (() => {
+    if (submitMutation.isPending) return "Submitting...";
+    if (shiftStatus.reason === "not_started") return `Opens at ${shiftStatus.startsAt}`;
+    if (shiftStatus.reason === "in_progress") return `Available after ${shiftStatus.endsAt}`;
+    return "Submit Claim";
+  })();
+
+  // Tooltip
+  const submitTitle = (() => {
+    if (shiftStatus.reason === "not_started") return `Shift starts at ${shiftStatus.startsAt}`;
+    if (shiftStatus.reason === "in_progress") return `Shift ends at ${shiftStatus.endsAt}`;
+    return undefined;
+  })();
+
+  // Earnings preview
   const previewClaim = {
     hours_worked:   Number(form.hours_worked   || 0),
     overtime_hours: Number(form.overtime_hours || 0),
     is_holiday:     !!(holidayInfo || nextDayHoliday),
   };
   const { normal, overtime, holiday, total } = calcClaimEarnings(
-    previewClaim,
-    hourlyRate,
-    rosterEntry?.shift ?? null,   // shift detail for grave midnight split
-    !!nextDayHoliday              // is next day a holiday?
+    previewClaim, hourlyRate, rosterEntry?.shift ?? null, !!nextDayHoliday
   );
-
-  const isOff      = rosterEntry?.status === "Off";
-  const rosterShift = rosterEntry?.shift?.shift_name;
-  const isGrave    = rosterEntry?.shift?.is_grave;
 
   return (
     <Layout>
@@ -200,22 +299,13 @@ function SubmitClaim() {
           <a href="/claims" style={{ color: "#006fd6" }}>My Claims</a> &gt; Submit New Claim
         </div>
 
-        {/* ===== Feedback ===== */}
         {error && (
-          <div style={{
-            background: "#fee4e2", border: "1px solid #fecaca",
-            color: "#b42318", padding: "10px 16px",
-            borderRadius: 8, marginBottom: 16, fontSize: 13,
-          }}>
+          <div style={{ background: "#fee4e2", border: "1px solid #fecaca", color: "#b42318", padding: "10px 16px", borderRadius: 8, marginBottom: 16, fontSize: 13 }}>
             ✕ {error}
           </div>
         )}
         {success && (
-          <div style={{
-            background: "#e8f8ef", border: "1px solid #bbf7d0",
-            color: "#157347", padding: "10px 16px",
-            borderRadius: 8, marginBottom: 16, fontSize: 13,
-          }}>
+          <div style={{ background: "#e8f8ef", border: "1px solid #bbf7d0", color: "#157347", padding: "10px 16px", borderRadius: 8, marginBottom: 16, fontSize: 13 }}>
             ✓ {success}
           </div>
         )}
@@ -224,62 +314,86 @@ function SubmitClaim() {
           <div className="claim-form-card">
             <h3>Claim Details</h3>
 
-            {/* ===== Status Banners ===== */}
+            {/* ===== Roster / timing banners ===== */}
             {checkingDate && (
               <div style={{ padding: "10px 14px", background: "#f4f8fd", borderRadius: 8, marginBottom: 14, fontSize: 13, color: "#667085" }}>
                 Checking your roster for this date...
               </div>
             )}
 
-            {!checkingDate && rosterEntry && !isOff && (
-              <div style={{
-                padding: "10px 14px", borderRadius: 8, marginBottom: 14,
-                background: "#e8f8ef", border: "1px solid #bbf7d0",
-                color: "#157347", fontSize: 13, fontWeight: 700,
-              }}>
+            {!checkingDate && rosterEntry && !isOff && !shiftStatus.blocked && (
+              <div style={{ padding: "10px 14px", borderRadius: 8, marginBottom: 14, background: "#e8f8ef", border: "1px solid #bbf7d0", color: "#157347", fontSize: 13, fontWeight: 700 }}>
                 ✓ Roster match: {rosterShift} · {rosterEntry.shift?.start_time?.slice(0, 5)} – {rosterEntry.shift?.end_time?.slice(0, 5)}
                 {isGrave && " 🌙 (Overnight)"}
               </div>
             )}
 
             {!checkingDate && isOff && (
-              <div style={{
-                padding: "10px 14px", background: "#fff3e5",
-                border: "1px solid #fed7aa", borderRadius: 8,
-                marginBottom: 14, fontSize: 13, color: "#b54708", fontWeight: 700,
-              }}>
+              <div style={{ padding: "10px 14px", background: "#fff3e5", border: "1px solid #fed7aa", borderRadius: 8, marginBottom: 14, fontSize: 13, color: "#b54708", fontWeight: 700 }}>
                 ⚠️ You are scheduled Off on this date. Claims cannot be submitted for Off days.
               </div>
             )}
 
             {!checkingDate && form.claim_date && !rosterEntry && (
-              <div style={{
-                padding: "10px 14px", background: "#fff3e5",
-                border: "1px solid #fed7aa", borderRadius: 8,
-                marginBottom: 14, fontSize: 13, color: "#b54708",
-              }}>
+              <div style={{ padding: "10px 14px", background: "#fff3e5", border: "1px solid #fed7aa", borderRadius: 8, marginBottom: 14, fontSize: 13, color: "#b54708" }}>
                 ⚠️ No roster found for this date. Ensure a roster has been generated for your schedule.
+              </div>
+            )}
+
+            {/* ===== Shift timing banner ===== */}
+            {!checkingDate && rosterEntry && !isOff && shiftStatus.blocked && (
+              <div style={{
+                padding: "12px 14px",
+                background: shiftStatus.reason === "not_started" ? "#fffbeb" : "#f0f9ff",
+                border:     `1px solid ${shiftStatus.reason === "not_started" ? "#fde68a" : "#bae6fd"}`,
+                borderRadius: 8, marginBottom: 14,
+                display: "flex", gap: 10, alignItems: "flex-start",
+              }}>
+                <span style={{ fontSize: 20, flexShrink: 0, marginTop: 1 }}>
+                  {shiftStatus.reason === "not_started" ? "🕐" : "⏳"}
+                </span>
+                <div>
+                  {shiftStatus.reason === "not_started" ? (
+                    <>
+                      <strong style={{ color: "#92400e" }}>Shift hasn't started yet</strong>
+                      <p style={{ margin: "3px 0 0", fontSize: 13, color: "#92400e", fontWeight: 400, lineHeight: 1.5 }}>
+                        Your <strong>{rosterShift}</strong> begins at <strong>{shiftStatus.startsAt}</strong>.
+                        Come back after your shift ends to submit your claim.
+                        {isGrave && (
+                          <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "#b45309" }}>
+                            🌙 Grave shift: you'll be able to claim from 06:00 tomorrow.
+                          </span>
+                        )}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <strong style={{ color: "#0369a1" }}>Shift still in progress</strong>
+                      <p style={{ margin: "3px 0 0", fontSize: 13, color: "#0369a1", fontWeight: 400, lineHeight: 1.5 }}>
+                        Your <strong>{rosterShift}</strong> ends at <strong>{shiftStatus.endsAt}</strong>.
+                        You can submit this claim once your shift is complete.
+                        {isGrave && (
+                          <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "#0284c7" }}>
+                            🌙 Grave shift crosses midnight — submission unlocks at {shiftStatus.endsAt}.
+                          </span>
+                        )}
+                      </p>
+                    </>
+                  )}
+                </div>
               </div>
             )}
 
             {/* ===== Holiday Banners ===== */}
             {holidayInfo && (
-              <div style={{
-                padding: "10px 14px", background: "#f1eaff",
-                border: "1px solid #d8b4fe", borderRadius: 8,
-                marginBottom: 10, fontSize: 13, color: "#7a3aed", fontWeight: 700,
-              }}>
+              <div style={{ padding: "10px 14px", background: "#f1eaff", border: "1px solid #d8b4fe", borderRadius: 8, marginBottom: 10, fontSize: 13, color: "#7a3aed", fontWeight: 700 }}>
                 🌟 Public Holiday: {holidayInfo.holiday_name}
                 {isGrave && " — Holiday pay applies to 22:00–00:00 portion."}
               </div>
             )}
 
             {nextDayHoliday && isGrave && (
-              <div style={{
-                padding: "10px 14px", background: "#f1eaff",
-                border: "1px solid #d8b4fe", borderRadius: 8,
-                marginBottom: 14, fontSize: 13, color: "#7a3aed", fontWeight: 700,
-              }}>
+              <div style={{ padding: "10px 14px", background: "#f1eaff", border: "1px solid #d8b4fe", borderRadius: 8, marginBottom: 14, fontSize: 13, color: "#7a3aed", fontWeight: 700 }}>
                 🌟 Tomorrow: {nextDayHoliday.holiday_name} — Holiday pay applies to 00:00–06:00 portion of your grave shift.
               </div>
             )}
@@ -339,7 +453,6 @@ function SubmitClaim() {
                 </div>
               </div>
 
-              {/* Public holiday — read-only, auto-detected */}
               <div className="form-group">
                 <label>Public Holiday</label>
                 <div style={{
@@ -367,12 +480,7 @@ function SubmitClaim() {
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   placeholder="Optional — e.g. Network incident, extra hours worked..."
-                  style={{
-                    width: "100%", padding: 11, border: "1px solid #d0d5dd",
-                    borderRadius: 8, fontSize: 13, outline: "none",
-                    minHeight: 90, resize: "vertical",
-                    fontFamily: "inherit", boxSizing: "border-box",
-                  }}
+                  style={{ width: "100%", padding: 11, border: "1px solid #d0d5dd", borderRadius: 8, fontSize: 13, outline: "none", minHeight: 90, resize: "vertical", fontFamily: "inherit", boxSizing: "border-box" }}
                 />
               </div>
 
@@ -411,9 +519,11 @@ function SubmitClaim() {
                 <button
                   type="submit"
                   className="primary-btn"
-                  disabled={submitMutation.isPending || isOff}
+                  disabled={submitBlocked}
+                  title={submitTitle}
+                  style={shiftStatus.blocked ? { opacity: 0.55, cursor: "not-allowed" } : {}}
                 >
-                  {submitMutation.isPending ? "Submitting..." : "Submit Claim"}
+                  {submitLabel}
                 </button>
               </div>
             </form>
