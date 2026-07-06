@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from "react-router-dom";
 import { HiMenu, HiX } from "react-icons/hi";
 import { useAuthStore } from "../store/authStore";
@@ -42,12 +42,19 @@ function Layout({ children }) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
+  useEffect(() => {
+    if (open) {
+      document.body.classList.add("overflow-hidden");
+    } else {
+      document.body.classList.remove("overflow-hidden");
+    }
+    return () => document.body.classList.remove("overflow-hidden");
+  }, [open]);
+
   // Auth
   const user = useAuthStore((s) => s.user);
   const isAuth = useAuthStore((s) => s.isAuth);
 
-  // Role is stored directly on the user object: { role, employee }
-  // Falls back through nesting patterns in case store shape differs
   const role = (
     user?.user?.user?.role ||
     "Employee"
@@ -56,12 +63,10 @@ function Layout({ children }) {
   const isAdmin = role === "admin";
   const navItems = isAdmin ? ADMIN_NAV : EMPLOYEE_NAV;
 
-  // Employee profile fields
   const emp = user?.user || [];
   const empName = emp?.name || "User";
   const empPos = emp?.position || (isAdmin ? "Administrator" : "Employee");
 
-  // Notifications badge
   const { unreadCount } = useNotifications({
     limit: 1,
     unreadOnly: true,
@@ -76,7 +81,7 @@ function Layout({ children }) {
   const closeSidebar = () => setOpen(false);
 
   return (
-    <div className="flex min-h-screen bg-[#f4f8fd]">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#f4f8fd]">
 
       {/* ===== Mobile overlay ===== */}
       {open && (
@@ -106,7 +111,6 @@ function Layout({ children }) {
               {isAdmin ? "Management System" : "Employee Portal"}
             </p>
           </div>
-          {/* Close button — mobile only */}
           <button
             className="ml-auto md:hidden text-white text-xl"
             onClick={closeSidebar}
@@ -148,12 +152,10 @@ function Layout({ children }) {
       </aside>
 
       {/* ===== Main area ===== */}
-      <div className="flex flex-col flex-1 min-w-0">
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
 
         {/* ===== Topbar ===== */}
         <header className="bg-[#006fd6] text-white h-14 flex items-center gap-3 px-3 md:px-4 shrink-0">
-
-          {/* Hamburger — mobile only */}
           <button
             className="md:hidden text-2xl text-white shrink-0"
             onClick={() => setOpen(true)}
@@ -162,7 +164,6 @@ function Layout({ children }) {
             <HiMenu />
           </button>
 
-          {/* Brand — mobile only */}
           <div className="flex items-center gap-2 md:hidden shrink-0">
             <div className="w-7 h-7 bg-[#005bbb] rounded-lg flex items-center justify-center text-sm">
               🛡️
@@ -175,17 +176,13 @@ function Layout({ children }) {
             </div>
           </div>
 
-          {/* Search — grows to fill available space */}
           <div className="flex-1 min-w-0 flex justify-center">
             <div className="w-full max-w-md">
               <GlobalSearch />
             </div>
           </div>
 
-          {/* Right actions */}
           <div className="flex items-center gap-2 md:gap-3 shrink-0">
-
-            {/* Bell */}
             <button
               onClick={() => navigate("/notifications")}
               className="relative text-white text-lg cursor-pointer bg-transparent border-none p-1"
@@ -199,12 +196,10 @@ function Layout({ children }) {
               )}
             </button>
 
-            {/* Avatar */}
             <div className="w-8 h-8 rounded-full bg-[#eaf4ff] text-[#006fd6] flex items-center justify-center font-bold text-xs shrink-0">
               {getInitials(empName)}
             </div>
 
-            {/* Name + position — hidden on small screens */}
             <div className="hidden lg:flex flex-col text-xs leading-tight max-w-30">
               <strong className="truncate">{empName}</strong>
               <small className="opacity-80 truncate capitalize">{empPos}</small>
@@ -213,7 +208,7 @@ function Layout({ children }) {
         </header>
 
         {/* ===== Page content ===== */}
-        <main className="flex-1 min-w-0 overflow-x-hidden">
+        <main className="flex-1 min-w-0 overflow-y-auto overscroll-contain">
           {children}
         </main>
       </div>
