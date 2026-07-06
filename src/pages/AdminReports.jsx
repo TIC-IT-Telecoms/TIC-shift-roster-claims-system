@@ -1,4 +1,3 @@
-// src/pages/AdminReports.jsx
 import { useState, useMemo } from "react";
 import Layout from "../components/Layout";
 import { useQuery } from "@tanstack/react-query";
@@ -18,13 +17,13 @@ import {
 } from "../utils/helpers";
 
 // ===== Constants =====
-const todayStr   = getTodayStr();
+const todayStr = getTodayStr();
 const monthStart = getMonthStart();
 
 const REPORT_TYPES = [
-  { value: "payroll",    label: "Payroll Summary" },
-  { value: "claims",     label: "Claims Report" },
-  { value: "roster",     label: "Roster Report" },
+  { value: "payroll", label: "Payroll Summary" },
+  { value: "claims", label: "Claims Report" },
+  { value: "roster", label: "Roster Report" },
   { value: "compliance", label: "Compliance Report" },
 ];
 
@@ -35,9 +34,9 @@ const buildWeeklyChart = (claims, employees) => {
   (employees || []).forEach((e) => { rateMap[e.employee_id] = Number(e.hourly_rate || 0); });
 
   const weeks = Array.from({ length: 5 }, (_, i) => ({
-    label:    `Week ${i + 1}`,
+    label: `Week ${i + 1}`,
     earnings: 0,
-    count:    0,
+    count: 0,
   }));
 
   (claims || []).forEach((claim) => {
@@ -68,41 +67,41 @@ const SectionTitle = ({ children }) => (
 
 function AdminReports() {
   const [reportType, setReportType] = useState("payroll");
-  const [startDate,  setStartDate]  = useState(monthStart);
-  const [endDate,    setEndDate]    = useState(todayStr);
+  const [startDate, setStartDate] = useState(monthStart);
+  const [endDate, setEndDate] = useState(todayStr);
   const [teamFilter, setTeamFilter] = useState("");
-  const [exporting,  setExporting]  = useState(null);
+  const [exporting, setExporting] = useState(null);
 
   // ===== Queries =====
   const { data: employees } = useQuery({
     queryKey: QUERY_KEYS.EMPLOYEES,
-    queryFn:  employeeApi.getAll,
-    select:   (d) => d.data,
+    queryFn: employeeApi.getAll,
+    select: (d) => d.data,
   });
 
   const { data: teams } = useQuery({
     queryKey: QUERY_KEYS.TEAMS,
-    queryFn:  teamApi.getAll,
-    select:   (d) => d.data,
+    queryFn: teamApi.getAll,
+    select: (d) => d.data,
   });
 
   const { data: claims, isLoading: loadingClaims } = useQuery({
     queryKey: QUERY_KEYS.CLAIMS({ start_date: startDate, end_date: endDate, team_id: teamFilter || undefined }),
-    queryFn:  () => claimApi.getAll({ start_date: startDate, end_date: endDate, ...(teamFilter ? { team_id: teamFilter } : {}) }),
-    select:   (d) => d.data,
-    enabled:  !!startDate && !!endDate,
+    queryFn: () => claimApi.getAll({ start_date: startDate, end_date: endDate, ...(teamFilter ? { team_id: teamFilter } : {}) }),
+    select: (d) => d.data,
+    enabled: !!startDate && !!endDate,
   });
 
   const { data: rosterData, isLoading: loadingRoster } = useQuery({
     queryKey: QUERY_KEYS.ROSTERS({ start_date: startDate, end_date: endDate, ...(teamFilter ? { team_id: teamFilter } : {}) }),
-    queryFn:  () => rosterApi.getAll({ start_date: startDate, end_date: endDate, ...(teamFilter ? { team_id: teamFilter } : {}) }),
-    select:   (d) => d.data,
-    enabled:  !!startDate && !!endDate && (reportType === "roster" || reportType === "compliance"),
+    queryFn: () => rosterApi.getAll({ start_date: startDate, end_date: endDate, ...(teamFilter ? { team_id: teamFilter } : {}) }),
+    select: (d) => d.data,
+    enabled: !!startDate && !!endDate && (reportType === "roster" || reportType === "compliance"),
   });
 
   // ===== Derived data =====
   const approvedClaims = (claims || []).filter((c) => c.status === "Approved");
-  const pendingClaims  = (claims || []).filter((c) => c.status === "Pending");
+  const pendingClaims = (claims || []).filter((c) => c.status === "Pending");
   const rejectedClaims = (claims || []).filter((c) => c.status === "Rejected");
 
   const rosterList = rosterData?.roster
@@ -128,28 +127,28 @@ function AdminReports() {
   // ===== Summary stats per report type =====
   const summaryStats = {
     payroll: [
-      { label: "Total Payroll",      value: formatZAR(totalPayroll),        color: "#006fd6" },
-      { label: "Approved Claims",    value: approvedClaims.length,           color: "#157347" },
-      { label: "Overtime Hours",     value: `${totalOTHours}h`,              color: "#b54708" },
-      { label: "Holiday Claims",     value: holidayClaims.length,            color: "#7a3aed" },
+      { label: "Total Payroll", value: formatZAR(totalPayroll), color: "#006fd6" },
+      { label: "Approved Claims", value: approvedClaims.length, color: "#157347" },
+      { label: "Overtime Hours", value: `${totalOTHours}h`, color: "#b54708" },
+      { label: "Holiday Claims", value: holidayClaims.length, color: "#7a3aed" },
     ],
     claims: [
-      { label: "Total Claims",       value: claims?.length || 0,             color: "#006fd6" },
-      { label: "Approved",           value: approvedClaims.length,           color: "#157347" },
-      { label: "Pending",            value: pendingClaims.length,            color: "#b54708" },
-      { label: "Rejected",           value: rejectedClaims.length,           color: "#b42318" },
+      { label: "Total Claims", value: claims?.length || 0, color: "#006fd6" },
+      { label: "Approved", value: approvedClaims.length, color: "#157347" },
+      { label: "Pending", value: pendingClaims.length, color: "#b54708" },
+      { label: "Rejected", value: rejectedClaims.length, color: "#b42318" },
     ],
     roster: [
-      { label: "Total Entries",      value: rosterList.length,               color: "#006fd6" },
-      { label: "Scheduled",          value: rosterList.filter((r) => r.status === "Scheduled").length, color: "#157347" },
-      { label: "Off Days",           value: rosterList.filter((r) => r.status === "Off").length,       color: "#667085" },
-      { label: "Holiday-Flagged",    value: rosterList.filter((r) => r.is_public_holiday).length,      color: "#7a3aed" },
+      { label: "Total Entries", value: rosterList.length, color: "#006fd6" },
+      { label: "Scheduled", value: rosterList.filter((r) => r.status === "Scheduled").length, color: "#157347" },
+      { label: "Off Days", value: rosterList.filter((r) => r.status === "Off").length, color: "#667085" },
+      { label: "Holiday-Flagged", value: rosterList.filter((r) => r.is_public_holiday).length, color: "#7a3aed" },
     ],
     compliance: [
-      { label: "Overtime Entries",   value: overtimeClaims.length,           color: "#b54708" },
-      { label: "Holiday Claims",     value: holidayClaims.length,            color: "#7a3aed" },
-      { label: "High OT (>3h)",      value: approvedClaims.filter((c) => Number(c.overtime_hours || 0) > 3).length, color: "#b42318" },
-      { label: "Approved Claims",    value: approvedClaims.length,           color: "#157347" },
+      { label: "Overtime Entries", value: overtimeClaims.length, color: "#b54708" },
+      { label: "Holiday Claims", value: holidayClaims.length, color: "#7a3aed" },
+      { label: "High OT (>3h)", value: approvedClaims.filter((c) => Number(c.overtime_hours || 0) > 3).length, color: "#b42318" },
+      { label: "Approved Claims", value: approvedClaims.length, color: "#157347" },
     ],
   };
 
@@ -160,8 +159,8 @@ function AdminReports() {
     const map = {
       payroll: {
         filename: `payroll_${startDate}_${endDate}.csv`,
-        headers:  ["Employee", "Team", "Date", "Shift", "Hours", "OT Hours", "Holiday", "Normal Pay", "OT Pay", "Holiday Pay", "Total"],
-        rows:     approvedClaims.map((c) => {
+        headers: ["Employee", "Team", "Date", "Shift", "Hours", "OT Hours", "Holiday", "Normal Pay", "OT Pay", "Holiday Pay", "Total"],
+        rows: approvedClaims.map((c) => {
           const rate = Number(c.employee?.hourly_rate || 0);
           const { normal, overtime, holiday, total } = calcClaimEarnings(c, rate, c.shift ?? null);
           return [
@@ -176,8 +175,8 @@ function AdminReports() {
       },
       claims: {
         filename: `claims_${startDate}_${endDate}.csv`,
-        headers:  ["ID", "Employee", "Team", "Date", "Shift", "Hours", "OT Hours", "Holiday", "Status"],
-        rows:     (claims || []).map((c) => [
+        headers: ["ID", "Employee", "Team", "Date", "Shift", "Hours", "OT Hours", "Holiday", "Status"],
+        rows: (claims || []).map((c) => [
           `CLM${String(c.claim_id).padStart(4, "0")}`,
           c.employee?.name, c.employee?.team?.team_name || "—",
           c.claim_date, c.shift_type,
@@ -188,8 +187,8 @@ function AdminReports() {
       },
       roster: {
         filename: `roster_${startDate}_${endDate}.csv`,
-        headers:  ["Employee", "Team", "Date", "Shift", "Start", "End", "Status", "Holiday"],
-        rows:     rosterList.map((r) => [
+        headers: ["Employee", "Team", "Date", "Shift", "Start", "End", "Status", "Holiday"],
+        rows: rosterList.map((r) => [
           r.employee?.name, r.employee?.team?.team_name || "—",
           r.roster_date, r.shift?.shift_name || "—",
           r.shift?.start_time?.slice(0, 5) || "—",
@@ -200,8 +199,8 @@ function AdminReports() {
       },
       compliance: {
         filename: `compliance_${startDate}_${endDate}.csv`,
-        headers:  ["Employee", "Team", "Date", "Shift", "Hours", "OT Hours", "Holiday", "Note"],
-        rows:     approvedClaims.map((c) => {
+        headers: ["Employee", "Team", "Date", "Shift", "Hours", "OT Hours", "Holiday", "Note"],
+        rows: approvedClaims.map((c) => {
           const ot = Number(c.overtime_hours || 0);
           return [
             c.employee?.name, c.employee?.team?.team_name || "—",
@@ -225,9 +224,9 @@ function AdminReports() {
     const reportLabel = REPORT_TYPES.find((r) => r.value === reportType)?.label || "Report";
 
     const payrollTotals = () => {
-      const normalSum  = approvedClaims.reduce((s, c) => s + calcClaimEarnings(c, Number(c.employee?.hourly_rate || 0), c.shift ?? null).normal,   0);
-      const otSum      = approvedClaims.reduce((s, c) => s + calcClaimEarnings(c, Number(c.employee?.hourly_rate || 0), c.shift ?? null).overtime,  0);
-      const holSum     = approvedClaims.reduce((s, c) => s + calcClaimEarnings(c, Number(c.employee?.hourly_rate || 0), c.shift ?? null).holiday,   0);
+      const normalSum = approvedClaims.reduce((s, c) => s + calcClaimEarnings(c, Number(c.employee?.hourly_rate || 0), c.shift ?? null).normal, 0);
+      const otSum = approvedClaims.reduce((s, c) => s + calcClaimEarnings(c, Number(c.employee?.hourly_rate || 0), c.shift ?? null).overtime, 0);
+      const holSum = approvedClaims.reduce((s, c) => s + calcClaimEarnings(c, Number(c.employee?.hourly_rate || 0), c.shift ?? null).holiday, 0);
       return { normalSum, otSum, holSum };
     };
 
@@ -250,19 +249,19 @@ function AdminReports() {
       },
       claims: () => {
         const rows = (claims || []).map((c) =>
-          `<tr><td>CLM${String(c.claim_id).padStart(4,"0")}</td><td>${c.employee?.name}</td><td>${c.claim_date}</td><td>${c.shift_type}</td><td>${c.hours_worked}h</td><td>${c.overtime_hours}h</td><td>${c.is_holiday ? "🌟" : ""}</td><td><span class="${c.status.toLowerCase()}">${c.status}</span></td></tr>`
+          `<tr><td>CLM${String(c.claim_id).padStart(4, "0")}</td><td>${c.employee?.name}</td><td>${c.claim_date}</td><td>${c.shift_type}</td><td>${c.hours_worked}h</td><td>${c.overtime_hours}h</td><td>${c.is_holiday ? "🌟" : ""}</td><td><span class="${c.status.toLowerCase()}">${c.status}</span></td></tr>`
         ).join("");
         return `<table><thead><tr><th>ID</th><th>Employee</th><th>Date</th><th>Shift</th><th>Hours</th><th>OT</th><th>Hol</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
       },
       roster: () => {
         const rows = rosterList.map((r) =>
-          `<tr><td>${r.employee?.name}</td><td>${r.employee?.team?.team_name || "—"}</td><td>${r.roster_date}</td><td>${r.shift?.shift_name || "—"}</td><td>${r.shift?.start_time?.slice(0,5) || "—"}</td><td>${r.shift?.end_time?.slice(0,5) || "—"}</td><td>${r.status}</td><td>${r.is_public_holiday ? "🌟" : ""}</td></tr>`
+          `<tr><td>${r.employee?.name}</td><td>${r.employee?.team?.team_name || "—"}</td><td>${r.roster_date}</td><td>${r.shift?.shift_name || "—"}</td><td>${r.shift?.start_time?.slice(0, 5) || "—"}</td><td>${r.shift?.end_time?.slice(0, 5) || "—"}</td><td>${r.status}</td><td>${r.is_public_holiday ? "🌟" : ""}</td></tr>`
         ).join("");
         return `<table><thead><tr><th>Employee</th><th>Team</th><th>Date</th><th>Shift</th><th>Start</th><th>End</th><th>Status</th><th>Hol</th></tr></thead><tbody>${rows}</tbody></table>`;
       },
       compliance: () => {
         const rows = approvedClaims.map((c) => {
-          const ot   = Number(c.overtime_hours || 0);
+          const ot = Number(c.overtime_hours || 0);
           const note = ot > 3 ? "⚠ OT >3h" : c.is_holiday ? "Holiday" : "Normal";
           return `<tr><td>${c.employee?.name}</td><td>${c.claim_date}</td><td>${c.shift_type}</td><td>${c.hours_worked}h</td><td>${c.overtime_hours}h</td><td>${c.is_holiday ? "🌟" : ""}</td><td>${note}</td></tr>`;
         }).join("");
@@ -422,14 +421,14 @@ function AdminReports() {
                         <tbody>
                           {Object.values(
                             approvedClaims.reduce((acc, c) => {
-                              const id   = c.employee_id;
+                              const id = c.employee_id;
                               const rate = Number(c.employee?.hourly_rate || 0);
                               const { total } = calcClaimEarnings(c, rate, c.shift ?? null);
                               if (!acc[id]) acc[id] = { emp: c.employee, claims: 0, hours: 0, ot: 0, total: 0 };
                               acc[id].claims++;
-                              acc[id].hours  += Number(c.hours_worked || 0);
-                              acc[id].ot     += Number(c.overtime_hours || 0);
-                              acc[id].total  += total;
+                              acc[id].hours += Number(c.hours_worked || 0);
+                              acc[id].ot += Number(c.overtime_hours || 0);
+                              acc[id].total += total;
                               return acc;
                             }, {})
                           ).map(({ emp, claims, hours, ot, total }) => (
@@ -485,7 +484,7 @@ function AdminReports() {
                           <td>
                             <span className={
                               c.status === "Approved" ? "status-approved" :
-                              c.status === "Rejected" ? "status-rejected" : "status-pending"
+                                c.status === "Rejected" ? "status-rejected" : "status-pending"
                             }>
                               {c.status}
                             </span>
@@ -573,11 +572,11 @@ function AdminReports() {
                       </thead>
                       <tbody>
                         {approvedClaims.map((c) => {
-                          const ot      = Number(c.overtime_hours || 0);
-                          const highOT  = ot > 3;
-                          const flagBg  = highOT ? "#fee4e2"  : c.is_holiday ? "#f1eaff"  : "#f4f8fd";
-                          const flagClr = highOT ? "#b42318"  : c.is_holiday ? "#7a3aed"  : "#667085";
-                          const flag    = highOT ? "⚠ High OT" : c.is_holiday ? "🌟 Holiday" : "Normal";
+                          const ot = Number(c.overtime_hours || 0);
+                          const highOT = ot > 3;
+                          const flagBg = highOT ? "#fee4e2" : c.is_holiday ? "#f1eaff" : "#f4f8fd";
+                          const flagClr = highOT ? "#b42318" : c.is_holiday ? "#7a3aed" : "#667085";
+                          const flag = highOT ? "⚠ High OT" : c.is_holiday ? "🌟 Holiday" : "Normal";
 
                           return (
                             <tr key={c.claim_id} style={highOT ? { background: "#fff8f8" } : {}}>

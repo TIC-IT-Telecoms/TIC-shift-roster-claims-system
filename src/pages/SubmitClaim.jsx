@@ -1,4 +1,3 @@
-// src/pages/SubmitClaim.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
@@ -14,7 +13,7 @@ import {
   calcClaimEarnings,
 } from "../utils/helpers";
 
-const todayStr   = getTodayStr();
+const todayStr = getTodayStr();
 const monthStart = getMonthStart();
 
 const SHIFT_TYPES = ["Early Shift", "Night Shift", "Grave Shift"];
@@ -22,7 +21,7 @@ const SHIFT_TYPES = ["Early Shift", "Night Shift", "Grave Shift"];
 // ===== Status Badge =====
 const StatusBadge = ({ status }) => {
   const map = {
-    Pending:  "status-pending",
+    Pending: "status-pending",
     Approved: "status-approved",
     Rejected: "status-rejected",
   };
@@ -62,33 +61,33 @@ const toMinutes = (timeStr) => {
 const checkShiftAvailability = (shift, claimDate) => {
   if (!shift || !claimDate) return { blocked: false };
 
-  const todayD     = getTodayStr();
+  const todayD = getTodayStr();
   const yesterdayD = getYesterday();
 
   // Past dates (before yesterday) are always claimable
   if (claimDate < yesterdayD) return { blocked: false };
 
-  const now    = new Date();
+  const now = new Date();
   const nowMin = now.getHours() * 60 + now.getMinutes();
 
   if (shift.is_grave) {
     const startMin = toMinutes(shift.start_time || "22:00");
-    const endMin   = toMinutes(shift.end_time   || "06:00"); // next day
+    const endMin = toMinutes(shift.end_time || "06:00"); // next day
 
     if (claimDate === todayD) {
       if (nowMin < startMin) {
         // Shift hasn't started yet — e.g. it's 18:00 and shift starts at 22:00
         return {
-          blocked:  true,
-          reason:   "not_started",
+          blocked: true,
+          reason: "not_started",
           startsAt: `${shift.start_time?.slice(0, 5) || "22:00"} today`,
         };
       }
       // nowMin >= startMin: shift has started, running overnight until 06:00 tomorrow
       return {
         blocked: true,
-        reason:  "in_progress",
-        endsAt:  `${shift.end_time?.slice(0, 5) || "06:00"} tomorrow`,
+        reason: "in_progress",
+        endsAt: `${shift.end_time?.slice(0, 5) || "06:00"} tomorrow`,
       };
     }
 
@@ -98,8 +97,8 @@ const checkShiftAvailability = (shift, claimDate) => {
         // Still before 06:00 — shift is still running
         return {
           blocked: true,
-          reason:  "in_progress",
-          endsAt:  `${shift.end_time?.slice(0, 5) || "06:00"} today`,
+          reason: "in_progress",
+          endsAt: `${shift.end_time?.slice(0, 5) || "06:00"} today`,
         };
       }
       // 06:00 or later — shift has ended, claim allowed
@@ -114,12 +113,12 @@ const checkShiftAvailability = (shift, claimDate) => {
   if (claimDate !== todayD) return { blocked: false };
 
   const startMin = toMinutes(shift.start_time || "00:00");
-  const endMin   = toMinutes(shift.end_time   || "00:00");
+  const endMin = toMinutes(shift.end_time || "00:00");
 
   if (nowMin < startMin) {
     return {
-      blocked:  true,
-      reason:   "not_started",
+      blocked: true,
+      reason: "not_started",
       startsAt: `${shift.start_time?.slice(0, 5)} today`,
     };
   }
@@ -127,8 +126,8 @@ const checkShiftAvailability = (shift, claimDate) => {
   if (nowMin < endMin) {
     return {
       blocked: true,
-      reason:  "in_progress",
-      endsAt:  `${shift.end_time?.slice(0, 5)} today`,
+      reason: "in_progress",
+      endsAt: `${shift.end_time?.slice(0, 5)} today`,
     };
   }
 
@@ -137,28 +136,28 @@ const checkShiftAvailability = (shift, claimDate) => {
 
 function SubmitClaim() {
   const navigate = useNavigate();
-  const qc       = useQueryClient();
+  const qc = useQueryClient();
 
   const [form, setForm] = useState({
-    claim_date:     todayStr,
-    shift_type:     "",
-    hours_worked:   8,
+    claim_date: todayStr,
+    shift_type: "",
+    hours_worked: 8,
     overtime_hours: 0,
-    description:    "",
+    description: "",
   });
 
-  const [rosterEntry,    setRosterEntry]    = useState(null);
-  const [holidayInfo,    setHolidayInfo]    = useState(null);
+  const [rosterEntry, setRosterEntry] = useState(null);
+  const [holidayInfo, setHolidayInfo] = useState(null);
   const [nextDayHoliday, setNextDayHoliday] = useState(null);
-  const [checkingDate,   setCheckingDate]   = useState(false);
-  const [error,          setError]          = useState("");
-  const [success,        setSuccess]        = useState("");
+  const [checkingDate, setCheckingDate] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   // ===== Fetch profile =====
   const { data: profile } = useQuery({
     queryKey: QUERY_KEYS.PROFILE,
-    queryFn:  profileApi.getProfile,
-    select:   (d) => d.data,
+    queryFn: profileApi.getProfile,
+    select: (d) => d.data,
   });
 
   const hourlyRate = Number(profile?.employee?.hourly_rate || 0);
@@ -166,8 +165,8 @@ function SubmitClaim() {
   // ===== Fetch recent claims =====
   const { data: recentClaims } = useQuery({
     queryKey: QUERY_KEYS.MY_CLAIMS({ start_date: monthStart, end_date: todayStr }),
-    queryFn:  () => claimApi.getMyClaims({ start_date: monthStart, end_date: todayStr }),
-    select:   (d) => d.data?.slice(0, 5),
+    queryFn: () => claimApi.getMyClaims({ start_date: monthStart, end_date: todayStr }),
+    select: (d) => d.data?.slice(0, 5),
   });
 
   // ===== When date changes: fetch roster + holidays =====
@@ -184,7 +183,7 @@ function SubmitClaim() {
       try {
         const rosterRes = await rosterApi.getMyRoster({
           start_date: form.claim_date,
-          end_date:   form.claim_date,
+          end_date: form.claim_date,
         });
         const raw = rosterRes?.data?.roster || [];
         entry = Array.isArray(raw)
@@ -251,20 +250,20 @@ function SubmitClaim() {
     }
 
     submitMutation.mutate({
-      claim_date:     form.claim_date,
-      shift_type:     form.shift_type,
-      hours_worked:   Number(form.hours_worked),
+      claim_date: form.claim_date,
+      shift_type: form.shift_type,
+      hours_worked: Number(form.hours_worked),
       overtime_hours: Number(form.overtime_hours || 0),
-      description:    form.description.trim() || null,
+      description: form.description.trim() || null,
     });
   };
 
   // ===== Derived state =====
-  const isOff       = rosterEntry?.status === "Off";
+  const isOff = rosterEntry?.status === "Off";
   const rosterShift = rosterEntry?.shift?.shift_name;
-  const isGrave     = rosterEntry?.shift?.is_grave;
+  const isGrave = rosterEntry?.shift?.is_grave;
 
-  const shiftStatus  = checkShiftAvailability(rosterEntry?.shift ?? null, form.claim_date);
+  const shiftStatus = checkShiftAvailability(rosterEntry?.shift ?? null, form.claim_date);
   const submitBlocked = submitMutation.isPending || isOff || shiftStatus.blocked;
 
   // Button label
@@ -284,9 +283,9 @@ function SubmitClaim() {
 
   // Earnings preview
   const previewClaim = {
-    hours_worked:   Number(form.hours_worked   || 0),
+    hours_worked: Number(form.hours_worked || 0),
     overtime_hours: Number(form.overtime_hours || 0),
-    is_holiday:     !!(holidayInfo || nextDayHoliday),
+    is_holiday: !!(holidayInfo || nextDayHoliday),
   };
   const { normal, overtime, holiday, total } = calcClaimEarnings(
     previewClaim, hourlyRate, rosterEntry?.shift ?? null, !!nextDayHoliday
@@ -345,7 +344,7 @@ function SubmitClaim() {
               <div style={{
                 padding: "12px 14px",
                 background: shiftStatus.reason === "not_started" ? "#fffbeb" : "#f0f9ff",
-                border:     `1px solid ${shiftStatus.reason === "not_started" ? "#fde68a" : "#bae6fd"}`,
+                border: `1px solid ${shiftStatus.reason === "not_started" ? "#fde68a" : "#bae6fd"}`,
                 borderRadius: 8, marginBottom: 14,
                 display: "flex", gap: 10, alignItems: "flex-start",
               }}>
@@ -466,10 +465,10 @@ function SubmitClaim() {
                     holidayInfo && nextDayHoliday
                       ? `🌟 Both today (${holidayInfo.holiday_name}) and tomorrow (${nextDayHoliday.holiday_name}) are public holidays`
                       : holidayInfo
-                      ? `🌟 Yes — ${holidayInfo.holiday_name}`
-                      : nextDayHoliday
-                      ? `🌟 Next day is a holiday — ${nextDayHoliday.holiday_name}`
-                      : "No — auto-detected from system"
+                        ? `🌟 Yes — ${holidayInfo.holiday_name}`
+                        : nextDayHoliday
+                          ? `🌟 Next day is a holiday — ${nextDayHoliday.holiday_name}`
+                          : "No — auto-detected from system"
                   )}
                 </div>
               </div>
@@ -496,9 +495,9 @@ function SubmitClaim() {
                     )}
                   </div>
                   {[
-                    { label: "Normal Pay",          value: formatZAR(normal) },
+                    { label: "Normal Pay", value: formatZAR(normal) },
                     { label: "Overtime Pay (×1.5)", value: formatZAR(overtime) },
-                    { label: "Holiday Pay",         value: formatZAR(holiday) },
+                    { label: "Holiday Pay", value: formatZAR(holiday) },
                   ].map(({ label, value }) => (
                     <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "9px 14px", borderTop: "1px solid #edf2f7", fontSize: 13 }}>
                       <span style={{ color: "#667085" }}>{label}</span>

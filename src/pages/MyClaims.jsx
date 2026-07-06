@@ -1,4 +1,3 @@
-// src/pages/MyClaims.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
@@ -11,7 +10,7 @@ import { formatDate, formatZAR, calcClaimEarnings } from "../utils/helpers";
 // ===== Status badge =====
 const StatusBadge = ({ status }) => {
   const map = {
-    Pending:  "status-pending",
+    Pending: "status-pending",
     Approved: "status-approved",
     Rejected: "status-rejected",
   };
@@ -85,12 +84,12 @@ function ClaimModal({ claim, onClose, hourlyRate }) {
             Shift Details
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
-            <DetailCell label="Shift Type"     value={claim.shift_type} />
-            <DetailCell label="Claim Date"     value={claim.claim_date} />
-            <DetailCell label="Hours Worked"   value={`${claim.hours_worked}h`} />
+            <DetailCell label="Shift Type" value={claim.shift_type} />
+            <DetailCell label="Claim Date" value={claim.claim_date} />
+            <DetailCell label="Hours Worked" value={`${claim.hours_worked}h`} />
             <DetailCell label="Overtime Hours" value={`${claim.overtime_hours}h`} />
             <DetailCell label="Public Holiday" value={claim.is_holiday ? "Yes 🌟" : "No"} />
-            <DetailCell label="Submitted"      value={formatDate(claim.created_at)} />
+            <DetailCell label="Submitted" value={formatDate(claim.created_at)} />
           </div>
 
           {/* Earnings Breakdown */}
@@ -99,9 +98,9 @@ function ClaimModal({ claim, onClose, hourlyRate }) {
           </p>
           <div style={{ border: "1px solid #e6edf5", borderRadius: 8, overflow: "hidden", marginBottom: 16 }}>
             {[
-              { label: "Normal Pay",          value: formatZAR(normal) },
+              { label: "Normal Pay", value: formatZAR(normal) },
               { label: "Overtime Pay (×1.5)", value: formatZAR(overtime) },
-              { label: "Holiday Pay",         value: formatZAR(holiday) },
+              { label: "Holiday Pay", value: formatZAR(holiday) },
             ].map(({ label, value }) => (
               <div key={label} style={{
                 display: "flex", justifyContent: "space-between",
@@ -181,8 +180,8 @@ function MyClaims() {
   // ===== Fetch profile for hourly rate =====
   const { data: profile } = useQuery({
     queryKey: QUERY_KEYS.PROFILE,
-    queryFn:  profileApi.getProfile,
-    select:   (d) => d.data,
+    queryFn: profileApi.getProfile,
+    select: (d) => d.data,
   });
 
   const hourlyRate = Number(profile?.employee?.hourly_rate || 0);
@@ -190,14 +189,14 @@ function MyClaims() {
   // ===== Fetch all own claims =====
   const { data: allClaims, isLoading, isError } = useQuery({
     queryKey: QUERY_KEYS.MY_CLAIMS({}),
-    queryFn:  () => claimApi.getMyClaims({}),
-    select:   (d) => d.data,
+    queryFn: () => claimApi.getMyClaims({}),
+    select: (d) => d.data,
   });
 
   // ===== Tab counts =====
   const counts = {
-    All:      allClaims?.length || 0,
-    Pending:  allClaims?.filter((c) => c.status === "Pending").length  || 0,
+    All: allClaims?.length || 0,
+    Pending: allClaims?.filter((c) => c.status === "Pending").length || 0,
     Approved: allClaims?.filter((c) => c.status === "Approved").length || 0,
     Rejected: allClaims?.filter((c) => c.status === "Rejected").length || 0,
   };
@@ -259,7 +258,7 @@ function MyClaims() {
               <tbody>
                 {filtered.map((claim) => {
                   const { total } = calcClaimEarnings(claim, hourlyRate, claim.shift ?? null);
-                  const hasOT     = Number(claim.overtime_hours) > 0;
+                  const hasOT = Number(claim.overtime_hours) > 0;
 
                   return (
                     <tr key={claim.claim_id}>

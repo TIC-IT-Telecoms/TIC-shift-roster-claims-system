@@ -34,8 +34,8 @@ function GenerateModal({ onClose, onSuccess }) {
 
   const generateRoster = useMutation({
     mutationFn: rosterApi.generate,
-    onSuccess:  (data) => onSuccess(data),
-    onError:    (err)  => setError(err.message),
+    onSuccess: (data) => onSuccess(data),
+    onError: (err) => setError(err.message),
   });
 
   const toggleRotation = (id) =>
@@ -53,8 +53,8 @@ function GenerateModal({ onClose, onSuccess }) {
     if (!form.start_date || !form.end_date) { setError("Start and end date are required."); return; }
     generateRoster.mutate({
       rotation_ids: form.rotation_ids.map(Number),
-      start_date:   form.start_date,
-      end_date:     form.end_date,
+      start_date: form.start_date,
+      end_date: form.end_date,
     });
   };
 
@@ -121,7 +121,7 @@ function GenerateModal({ onClose, onSuccess }) {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             {[
               { label: "Start Date *", key: "start_date", min: undefined },
-              { label: "End Date *",   key: "end_date",   min: form.start_date },
+              { label: "End Date *", key: "end_date", min: form.start_date },
             ].map(({ label, key, min }) => (
               <div key={key}>
                 <label style={{ fontSize: 13, fontWeight: 700, color: "#344054", display: "block", marginBottom: 6 }}>
@@ -159,14 +159,14 @@ function GenerateModal({ onClose, onSuccess }) {
 
 // ===== Delete Range Modal =====
 function DeleteRangeModal({ teams, onClose, onSuccess }) {
-  const [form, setForm]       = useState({ start_date: "", end_date: "", team_id: "" });
+  const [form, setForm] = useState({ start_date: "", end_date: "", team_id: "" });
   const [confirmed, setConfirmed] = useState(false);
-  const [error, setError]     = useState("");
+  const [error, setError] = useState("");
 
   const deleteRange = useMutation({
     mutationFn: rosterApi.deleteRange,
     onSuccess: (data) => onSuccess(data),
-    onError:   (err)  => setError(err.message),
+    onError: (err) => setError(err.message),
   });
 
   const handleDelete = (e) => {
@@ -222,7 +222,7 @@ function DeleteRangeModal({ teams, onClose, onSuccess }) {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             {[
               { label: "Start Date *", key: "start_date", min: undefined },
-              { label: "End Date *",   key: "end_date",   min: form.start_date },
+              { label: "End Date *", key: "end_date", min: form.start_date },
             ].map(({ label, key, min }) => (
               <div key={key}>
                 <label style={{ fontSize: 13, fontWeight: 700, color: "#344054", display: "block", marginBottom: 6 }}>
@@ -355,16 +355,15 @@ function AdminRosters() {
     { label: `${allEntries.filter((r) => r.status === "Scheduled").length} Scheduled`, bg: "#eaf4ff", color: "#006fd6" },
     { label: `${allEntries.filter((r) => r.status === "Off").length} Off`, bg: "#f2f4f7", color: "#667085" },
     {
-  label: `${
-    new Set(
-      allEntries
-        .filter((r) => Number(r.is_public_holiday) === 1)
-        .map((r) => r.roster_date)
-    ).size
-  } Holiday`,
-  bg: "#f1eaff",
-  color: "#7a3aed",
-}
+      label: `${new Set(
+        allEntries
+          .filter((r) => Number(r.is_public_holiday) === 1)
+          .map((r) => r.roster_date)
+      ).size
+        } Holiday`,
+      bg: "#f1eaff",
+      color: "#7a3aed",
+    }
   ];
 
   const handleGenSuccess = (data) => {
@@ -482,7 +481,7 @@ function AdminRosters() {
               {label}
             </span>
           ))}
-        </div> 
+        </div>
 
         {/* ===== Roster Table ===== */}
         <div className="roster-table-card">

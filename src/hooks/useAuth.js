@@ -15,8 +15,8 @@ export const useLogin = () => {
       }
 
       if (data?.data?.requiresOtp) {
-        navigate("/login-otp", { 
-          state: { email: variables.username.toLowerCase().trim() } 
+        navigate("/login-otp", {
+          state: { email: variables.username.toLowerCase().trim() }
         });
         return;
       }
@@ -61,7 +61,7 @@ export const useLogout = () => {
 export const useForgotPassword = () => {
   return useMutation({
     mutationFn: (email) => authApi.forgotPassword(email),
-    onSuccess: (data) => {},
+    onSuccess: (data) => { },
     onError: (err) => {
       console.error("Forgot password mutation failed:", err);
     },
@@ -71,7 +71,7 @@ export const useForgotPassword = () => {
 export const useResetPassword = () => {
   return useMutation({
     mutationFn: (resetPayload) => authApi.resetPassword(resetPayload),
-    onSuccess: (data) => {},
+    onSuccess: (data) => { },
     onError: (err) => {
       console.error("Reset password mutation failed:", err);
     },

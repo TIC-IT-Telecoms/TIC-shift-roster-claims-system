@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout";
-import { useResetPassword } from "../hooks/useAuth"; // Centralized custom hook matching your architecture
-
+import { useResetPassword } from "../hooks/useAuth"; 
 function ResetPassword() {
   const navigate = useNavigate();
   const [params] = useSearchParams();

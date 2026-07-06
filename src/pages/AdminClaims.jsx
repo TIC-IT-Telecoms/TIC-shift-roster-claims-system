@@ -13,7 +13,7 @@ const PAGE_SIZE = 5;
 // ===== Status badge =====
 const StatusBadge = ({ status }) => {
   const map = {
-    Pending:  "status-pending",
+    Pending: "status-pending",
     Approved: "status-approved",
     Rejected: "status-rejected",
   };
@@ -62,7 +62,7 @@ function RejectModal({ claim, onClose, onConfirm, isPending }) {
             fontFamily: "inherit", boxSizing: "border-box",
           }}
           onFocus={(e) => (e.target.style.borderColor = "#b42318")}
-          onBlur={(e)  => (e.target.style.borderColor = "#d0d5dd")}
+          onBlur={(e) => (e.target.style.borderColor = "#d0d5dd")}
         />
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 16 }}>
           <button onClick={onClose} className="cancel-btn">Cancel</button>
@@ -132,9 +132,9 @@ function ViewModal({ claim, onClose, onApprove, onReject, reviewing }) {
         <div style={{ padding: "20px 24px" }}>
           {/* Employee info */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
-            <DetailCell label="Employee"    value={claim.employee?.name} />
-            <DetailCell label="Team"        value={claim.employee?.team?.team_name || "—"} />
-            <DetailCell label="Email"       value={claim.employee?.email} />
+            <DetailCell label="Employee" value={claim.employee?.name} />
+            <DetailCell label="Team" value={claim.employee?.team?.team_name || "—"} />
+            <DetailCell label="Email" value={claim.employee?.email} />
             <DetailCell label="Hourly Rate" value={`R${Number(claim.employee?.hourly_rate || 0).toFixed(2)}/hr`} />
           </div>
 
@@ -143,12 +143,12 @@ function ViewModal({ claim, onClose, onApprove, onReject, reviewing }) {
             Claim Details
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
-            <DetailCell label="Shift Type"     value={claim.shift_type} />
-            <DetailCell label="Claim Date"     value={claim.claim_date} />
-            <DetailCell label="Hours Worked"   value={`${claim.hours_worked}h`} />
+            <DetailCell label="Shift Type" value={claim.shift_type} />
+            <DetailCell label="Claim Date" value={claim.claim_date} />
+            <DetailCell label="Hours Worked" value={`${claim.hours_worked}h`} />
             <DetailCell label="Overtime Hours" value={`${claim.overtime_hours}h`} />
             <DetailCell label="Public Holiday" value={claim.is_holiday ? "Yes 🌟" : "No"} />
-            <DetailCell label="Submitted"      value={claim.created_at?.slice(0, 10) || "—"} />
+            <DetailCell label="Submitted" value={claim.created_at?.slice(0, 10) || "—"} />
           </div>
 
           {/* Earnings */}
@@ -157,9 +157,9 @@ function ViewModal({ claim, onClose, onApprove, onReject, reviewing }) {
           </p>
           <div style={{ border: "1px solid #e6edf5", borderRadius: 8, overflow: "hidden", marginBottom: 16 }}>
             {[
-              { label: "Normal Pay",          value: formatZAR(normal) },
+              { label: "Normal Pay", value: formatZAR(normal) },
               { label: "Overtime Pay (×1.5)", value: formatZAR(overtime) },
-              { label: "Holiday Pay",         value: formatZAR(holiday) },
+              { label: "Holiday Pay", value: formatZAR(holiday) },
             ].map(({ label, value }) => (
               <div key={label} style={{
                 display: "flex", justifyContent: "space-between",
@@ -238,13 +238,13 @@ const TABS = ["Pending", "Approved", "Rejected"];
 function AdminClaims() {
   const qc = useQueryClient();
 
-  const [activeTab,      setActiveTab]      = useState("Pending");
-  const [search,         setSearch]         = useState("");
-  const [viewClaim,      setViewClaim]      = useState(null);
-  const [rejectClaim,    setRejectClaim]    = useState(null);
+  const [activeTab, setActiveTab] = useState("Pending");
+  const [search, setSearch] = useState("");
+  const [viewClaim, setViewClaim] = useState(null);
+  const [rejectClaim, setRejectClaim] = useState(null);
   const [claimToApprove, setClaimToApprove] = useState(null);
-  const [successMsg,     setSuccessMsg]     = useState("");
-  const [errorMsg,       setErrorMsg]       = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
 
   const showSuccess = (msg) => {
     setSuccessMsg(msg);
@@ -258,13 +258,13 @@ function AdminClaims() {
   // ===== Fetch all claims =====
   const { data: allClaims, isLoading } = useQuery({
     queryKey: QUERY_KEYS.CLAIMS({}),
-    queryFn:  () => claimApi.getAll({}),
-    select:   (d) => d.data,
+    queryFn: () => claimApi.getAll({}),
+    select: (d) => d.data,
   });
 
   // ===== Tab counts =====
   const counts = {
-    Pending:  allClaims?.filter((c) => c.status === "Pending").length  || 0,
+    Pending: allClaims?.filter((c) => c.status === "Pending").length || 0,
     Approved: allClaims?.filter((c) => c.status === "Approved").length || 0,
     Rejected: allClaims?.filter((c) => c.status === "Rejected").length || 0,
   };
@@ -319,15 +319,15 @@ function AdminClaims() {
 
   const confirmApprove = () => {
     reviewMutation.mutate({
-      id:     claimToApprove.claim_id,
+      id: claimToApprove.claim_id,
       status: "Approved",
-      notes:  "Claim approved.",
+      notes: "Claim approved.",
     });
   };
 
   const handleRejectConfirm = (notes) => {
     reviewMutation.mutate({
-      id:     rejectClaim.claim_id,
+      id: rejectClaim.claim_id,
       status: "Rejected",
       notes,
     });
@@ -402,7 +402,7 @@ function AdminClaims() {
 
               <tbody>
                 {paginatedData.map((claim) => {
-                  const rate  = Number(claim.employee?.hourly_rate || 0);
+                  const rate = Number(claim.employee?.hourly_rate || 0);
                   const { total } = calcClaimEarnings(claim, rate, claim.shift ?? null);
                   const hasOT = Number(claim.overtime_hours) > 0;
 

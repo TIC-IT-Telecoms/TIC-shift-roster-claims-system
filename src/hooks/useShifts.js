@@ -1,4 +1,3 @@
-// src/hooks/useShifts.js
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { shiftApi } from '../api/shiftApi';
 import { QUERY_KEYS } from '../utils/queryKeys';

@@ -7,17 +7,17 @@ import { teamApi } from "../api/teamApi";
 import { QUERY_KEYS } from "../utils/queryKeys";
 import { formatZAR, getMonthStart, getTodayStr } from "../utils/helpers";
 
-const todayStr   = getTodayStr();
+const todayStr = getTodayStr();
 const monthStart = getMonthStart();
 
 const inp = {
-  width:        "100%",
-  padding:      "10px 12px",
-  border:       "1px solid #d0d5dd",
+  width: "100%",
+  padding: "10px 12px",
+  border: "1px solid #d0d5dd",
   borderRadius: 8,
-  fontSize:     13,
-  outline:      "none",
-  boxSizing:    "border-box",
+  fontSize: 13,
+  outline: "none",
+  boxSizing: "border-box",
 };
 
 // ===== Quick-select month presets =====
@@ -27,7 +27,7 @@ const buildMonthPresets = () => {
   for (let i = 0; i < 6; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const start = d.toISOString().split("T")[0];
-    const end   = new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split("T")[0];
+    const end = new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split("T")[0];
     presets.push({
       label: d.toLocaleDateString("en-ZA", { month: "long", year: "numeric" }),
       start, end,
@@ -39,30 +39,30 @@ const MONTH_PRESETS = buildMonthPresets();
 
 function GeneratePayroll() {
   const navigate = useNavigate();
-  const qc       = useQueryClient();
+  const qc = useQueryClient();
 
-  const [startDate,  setStartDate]  = useState(monthStart);
-  const [endDate,    setEndDate]    = useState(todayStr);
+  const [startDate, setStartDate] = useState(monthStart);
+  const [endDate, setEndDate] = useState(todayStr);
   const [teamFilter, setTeamFilter] = useState("");
-  const [result,     setResult]     = useState(null);
-  const [errorMsg,   setErrorMsg]   = useState("");
+  const [result, setResult] = useState(null);
+  const [errorMsg, setErrorMsg] = useState("");
 
   // ===== Queries =====
   const { data: teams } = useQuery({
     queryKey: QUERY_KEYS.TEAMS,
-    queryFn:  teamApi.getAll,
-    select:   (d) => d.data,
+    queryFn: teamApi.getAll,
+    select: (d) => d.data,
   });
 
   const { data: preview, isLoading: loadingPreview, refetch: refetchPreview } = useQuery({
     queryKey: QUERY_KEYS.PAYROLL_PREVIEW({ start: startDate, end: endDate, team: teamFilter }),
-    queryFn:  () => payrollApi.getPreview({
+    queryFn: () => payrollApi.getPreview({
       pay_period_start: startDate,
-      pay_period_end:   endDate,
+      pay_period_end: endDate,
       ...(teamFilter ? { team_id: teamFilter } : {}),
     }),
-    select:   (d) => d.data,
-    enabled:  !!startDate && !!endDate,
+    select: (d) => d.data,
+    enabled: !!startDate && !!endDate,
   });
 
   // Refresh preview whenever filters change
@@ -74,7 +74,7 @@ function GeneratePayroll() {
   const generateMutation = useMutation({
     mutationFn: () => payrollApi.generateBulk({
       pay_period_start: startDate,
-      pay_period_end:   endDate,
+      pay_period_end: endDate,
       ...(teamFilter ? { team_id: teamFilter } : {}),
     }),
     onSuccess: (res) => {
@@ -94,7 +94,7 @@ function GeneratePayroll() {
     setErrorMsg("");
     setResult(null);
     if (!startDate || !endDate) { setErrorMsg("Please select a pay period."); return; }
-    if (endDate < startDate)    { setErrorMsg("End date must be after start date."); return; }
+    if (endDate < startDate) { setErrorMsg("End date must be after start date."); return; }
     if (!preview?.employees_with_claims) {
       setErrorMsg("No approved claims found in this period. Nothing to generate."); return;
     }
@@ -184,14 +184,14 @@ function GeneratePayroll() {
                       type="button"
                       onClick={() => { setStartDate(preset.start); setEndDate(preset.end); }}
                       style={{
-                        padding:      "5px 12px",
+                        padding: "5px 12px",
                         borderRadius: 999,
-                        fontSize:     12,
-                        fontWeight:   700,
-                        cursor:       "pointer",
-                        border:       `1px solid ${active ? "#006fd6" : "#e6edf5"}`,
-                        background:   active ? "#eaf4ff" : "white",
-                        color:        active ? "#006fd6" : "#667085",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        border: `1px solid ${active ? "#006fd6" : "#e6edf5"}`,
+                        background: active ? "#eaf4ff" : "white",
+                        color: active ? "#006fd6" : "#667085",
                       }}
                     >
                       {preset.label}
@@ -243,10 +243,10 @@ function GeneratePayroll() {
 
             {/* ===== Preview box ===== */}
             <div style={{
-              background:   "#f4f8fd",
-              border:       "1px solid #e6edf5",
+              background: "#f4f8fd",
+              border: "1px solid #e6edf5",
               borderRadius: 10,
-              padding:      16,
+              padding: 16,
               marginBottom: 16,
             }}>
               <p style={{ fontSize: 12, fontWeight: 700, color: "#667085", textTransform: "uppercase", margin: "0 0 12px" }}>
@@ -278,12 +278,12 @@ function GeneratePayroll() {
                     },
                   ].map(({ label, value, color, large }) => (
                     <div key={label} style={{
-                      display:        "flex",
+                      display: "flex",
                       justifyContent: "space-between",
-                      alignItems:     "center",
-                      padding:        "8px 0",
-                      borderBottom:   "1px solid #edf2f7",
-                      fontSize:       13,
+                      alignItems: "center",
+                      padding: "8px 0",
+                      borderBottom: "1px solid #edf2f7",
+                      fontSize: 13,
                     }}>
                       <span style={{ color: "#667085" }}>{label}</span>
                       <strong style={{ color, fontSize: large ? 16 : 14 }}>{value}</strong>

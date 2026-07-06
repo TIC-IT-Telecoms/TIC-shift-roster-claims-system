@@ -32,14 +32,14 @@ function MyPayroll() {
   // ===== Queries =====
   const { data: records, isLoading } = useQuery({
     queryKey: QUERY_KEYS.MY_PAYROLL,
-    queryFn:  payrollApi.getMyPayroll,
-    select:   (d) => d.data,
+    queryFn: payrollApi.getMyPayroll,
+    select: (d) => d.data,
   });
 
   const { data: profile } = useQuery({
     queryKey: QUERY_KEYS.PROFILE,
-    queryFn:  profileApi.getProfile,
-    select:   (d) => d.data,
+    queryFn: profileApi.getProfile,
+    select: (d) => d.data,
   });
 
   const latest = selected ?? records?.[0] ?? null;
@@ -52,7 +52,7 @@ function MyPayroll() {
       `Payslip — ${emp?.name || "Employee"} — ${periodLabel}`,
       `
         <p><strong>Employee:</strong> ${emp?.name || "—"}</p>
-        <p><strong>ID:</strong> ${emp?.employee_id ? `EMP-${String(emp.employee_id).padStart(4,"0")}` : "—"}</p>
+        <p><strong>ID:</strong> ${emp?.employee_id ? `EMP-${String(emp.employee_id).padStart(4, "0")}` : "—"}</p>
         <p><strong>Period:</strong> ${periodLabel}</p>
         <br/>
         <table style="width:100%;font-size:14px">
@@ -117,9 +117,9 @@ function MyPayroll() {
               </div>
 
               {latest ? (<>
-                <PayRow label="Normal Pay" value={formatZAR(latest.normal_pay)}     />
-                <PayRow label="Overtime Pay (×1.5)"  value={formatZAR(latest.overtime_pay)}   />
-                <PayRow label="Holiday Pay"  value={formatZAR(latest.holiday_pay)}    />
+                <PayRow label="Normal Pay" value={formatZAR(latest.normal_pay)} />
+                <PayRow label="Overtime Pay (×1.5)" value={formatZAR(latest.overtime_pay)} />
+                <PayRow label="Holiday Pay" value={formatZAR(latest.holiday_pay)} />
                 <PayRow label="Grave Shift Allowance" value={formatZAR(latest.grave_allowance)} />
                 <PayRow label="Total Earnings" value={formatZAR(latest.total_pay)} highlight />
               </>) : (

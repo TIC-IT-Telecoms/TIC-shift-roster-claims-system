@@ -1,4 +1,3 @@
-// src/hooks/useProfile.js
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { profileApi } from '../api/profileApi';
 import { QUERY_KEYS } from '../utils/queryKeys';

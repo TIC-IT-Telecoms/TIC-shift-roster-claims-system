@@ -1,4 +1,3 @@
-// src/pages/MyReports.jsx
 import { useState } from "react";
 import Layout from "../components/Layout";
 import { useQuery } from "@tanstack/react-query";
@@ -270,8 +269,8 @@ function MyReports() {
         Number(c.overtime_hours || 0) > 3
           ? "Overtime exceeds 3hrs"
           : c.is_holiday
-          ? "Holiday claim"
-          : "Normal",
+            ? "Holiday claim"
+            : "Normal",
       ])
     );
     setExporting(null);
@@ -385,26 +384,26 @@ function MyReports() {
               {/* Count badge */}
               <div className="flex items-start gap-2">
                 <p className="text-center" style={{
-                fontSize: 12, fontWeight: 700, color: "#006fd6",
-                background: "#eaf4ff", padding: "10px",
-                borderRadius: 999, display: "inline-block"
-              }}>
-                {report.loading ? "Loading..." : report.count}
-              </p>
+                  fontSize: 12, fontWeight: 700, color: "#006fd6",
+                  background: "#eaf4ff", padding: "10px",
+                  borderRadius: 999, display: "inline-block"
+                }}>
+                  {report.loading ? "Loading..." : report.count}
+                </p>
 
-              <button
-                className="report-btn"
-                onClick={report.action}
-                disabled={report.loading || exporting === report.key}
-                style={{
-                  border: `1px solid ${report.borderColor}`,
-                  color: report.btnColor,
-                  opacity: report.loading ? 0.6 : 1,
-                  cursor: report.loading ? "not-allowed" : "pointer",
-                }}
-              >
-                {exporting === report.key ? "Exporting..." : report.btnLabel}
-              </button>
+                <button
+                  className="report-btn"
+                  onClick={report.action}
+                  disabled={report.loading || exporting === report.key}
+                  style={{
+                    border: `1px solid ${report.borderColor}`,
+                    color: report.btnColor,
+                    opacity: report.loading ? 0.6 : 1,
+                    cursor: report.loading ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {exporting === report.key ? "Exporting..." : report.btnLabel}
+                </button>
               </div>
             </div>
           ))}

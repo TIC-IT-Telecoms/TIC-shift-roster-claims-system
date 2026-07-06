@@ -245,10 +245,10 @@ function AddTeam({ team, employees, onClose, onSuccess }) {
                 const emp = (employees || []).find((e) => e.employee_id === id);
                 return emp?.team?.team_name && emp.team.team_name !== team?.team_name;
               }) && (
-                <span style={{ fontSize: 11, color: "#b54708" }}>
-                  ⚠ Some employees will be moved from their current team
-                </span>
-              )}
+                  <span style={{ fontSize: 11, color: "#b54708" }}>
+                    ⚠ Some employees will be moved from their current team
+                  </span>
+                )}
             </div>
 
             {/* ===== Actions ===== */}

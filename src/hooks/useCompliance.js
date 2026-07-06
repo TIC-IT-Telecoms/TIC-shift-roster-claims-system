@@ -6,16 +6,16 @@ const KEY = 'compliance';
 export const useComplianceFlags = (params = {}) => {
   return useQuery({
     queryKey: [KEY, params],
-    queryFn:  () => complianceApi.getAll(params),
-    select:   (d) => d.data,
+    queryFn: () => complianceApi.getAll(params),
+    select: (d) => d.data,
   });
 };
 
 export const useMyComplianceFlags = () => {
   return useQuery({
     queryKey: [KEY, 'me'],
-    queryFn:  complianceApi.getMine,
-    select:   (d) => d.data,
+    queryFn: complianceApi.getMine,
+    select: (d) => d.data,
   });
 };
 
@@ -23,7 +23,7 @@ export const useRunComplianceCheck = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: complianceApi.check,
-    onSuccess:  () => qc.invalidateQueries({ queryKey: [KEY] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [KEY] }),
   });
 };
 
@@ -31,7 +31,7 @@ export const useRunBulkCheck = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: complianceApi.checkAll,
-    onSuccess:  () => qc.invalidateQueries({ queryKey: [KEY] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [KEY] }),
   });
 };
 
@@ -39,7 +39,7 @@ export const useResolveFlag = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, notes }) => complianceApi.resolve(id, notes),
-    onSuccess:  () => qc.invalidateQueries({ queryKey: [KEY] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [KEY] }),
   });
 };
 

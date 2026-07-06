@@ -1,17 +1,15 @@
-// src/components/Pagination.jsx
-
 const btnBase = {
-  display:        'inline-flex',
-  alignItems:     'center',
+  display: 'inline-flex',
+  alignItems: 'center',
   justifyContent: 'center',
-  width:          32,
-  height:         32,
-  borderRadius:   7,
-  border:         '1px solid #e6edf5',
-  fontSize:       13,
-  fontWeight:     700,
-  cursor:         'pointer',
-  transition:     'all 0.15s',
+  width: 32,
+  height: 32,
+  borderRadius: 7,
+  border: '1px solid #e6edf5',
+  fontSize: 13,
+  fontWeight: 700,
+  cursor: 'pointer',
+  transition: 'all 0.15s',
 };
 
 function Pagination({ currentPage, totalPages, onPageChange }) {
@@ -23,7 +21,7 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
       return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
     let start = Math.max(1, currentPage - 2);
-    let end   = Math.min(totalPages, start + 4);
+    let end = Math.min(totalPages, start + 4);
     if (end - start < 4) start = Math.max(1, end - 4);
     return Array.from({ length: end - start + 1 }, (_, i) => start + i);
   };
@@ -55,8 +53,8 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
           style={{
             ...btnBase,
             background: page === currentPage ? '#006fd6' : 'white',
-            color:      page === currentPage ? 'white'    : '#344054',
-            border:     page === currentPage
+            color: page === currentPage ? 'white' : '#344054',
+            border: page === currentPage
               ? '1px solid #006fd6'
               : '1px solid #e6edf5',
           }}
@@ -86,9 +84,9 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
         style={{
           ...btnBase,
           background: currentPage === 1 ? '#f4f8fd' : 'white',
-          color:      currentPage === 1 ? '#d0d5dd' : '#344054',
-          cursor:     currentPage === 1 ? 'not-allowed' : 'pointer',
-          marginLeft:  4,
+          color: currentPage === 1 ? '#d0d5dd' : '#344054',
+          cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+          marginLeft: 4,
         }}
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
@@ -99,8 +97,8 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
         style={{
           ...btnBase,
           background: currentPage === totalPages ? '#f4f8fd' : 'white',
-          color:      currentPage === totalPages ? '#d0d5dd' : '#344054',
-          cursor:     currentPage === totalPages ? 'not-allowed' : 'pointer',
+          color: currentPage === totalPages ? '#d0d5dd' : '#344054',
+          cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
         }}
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}

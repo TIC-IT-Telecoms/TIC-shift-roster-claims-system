@@ -12,7 +12,7 @@ axiosInstance.interceptors.response.use(
   (response) => response.data,
   (error) => {
     const status = error.response?.status;
-    const message = error.response?.data?.message || "Something went wrong";
+    const message = error.response?.data?.message;
     const requestUrl = error.config?.url || "";
 
     // Skip global redirect if the error came from the login endpoint

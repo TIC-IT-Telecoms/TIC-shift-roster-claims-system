@@ -85,7 +85,7 @@ function ForgotPassword() {
           <p className="font-semibold text-slate-900 mb-2">
             {email}
           </p>
-          
+
           <p className="text-xs text-slate-500 mb-4 px-4">
             Please review your inbox or spam folder. The secure link will remain active for 1 hour.
           </p>

@@ -1,4 +1,3 @@
-// src/hooks/useRotations.js
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { rotationApi } from '../api/rotationApi';
 import { QUERY_KEYS } from '../utils/queryKeys';

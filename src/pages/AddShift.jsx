@@ -1,7 +1,3 @@
-// src/pages/AddShift.jsx
-// Exported as a modal component — imported by Shifts.jsx
-// Handles both Add and Edit in one component
-
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { shiftApi } from "../api/shiftApi";

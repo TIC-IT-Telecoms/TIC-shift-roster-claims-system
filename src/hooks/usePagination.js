@@ -1,4 +1,3 @@
-// src/hooks/usePagination.js
 import { useState, useMemo, useEffect } from 'react';
 
 /**
@@ -28,12 +27,12 @@ const usePagination = (data = [], pageSize = 10) => {
   }, [data, safePage, pageSize]);
 
   const startIndex = data.length === 0 ? 0 : (safePage - 1) * pageSize + 1;
-  const endIndex   = Math.min(safePage * pageSize, data.length);
+  const endIndex = Math.min(safePage * pageSize, data.length);
 
   return {
-    currentPage:  safePage,
+    currentPage: safePage,
     setCurrentPage,
-    resetPage:    () => setCurrentPage(1),
+    resetPage: () => setCurrentPage(1),
     totalPages,
     paginatedData,
     pageSize,

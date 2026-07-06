@@ -2,7 +2,7 @@ import api from './axiosInstance';
 
 export const holidayApi = {
   getAll: (year) => api.get('/holidays', {
-      params: year ? { year } : undefined,
+    params: year ? { year } : undefined,
   }),
   getById: (id) => api.get(`/holidays/${id}`),
 

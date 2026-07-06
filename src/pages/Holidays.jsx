@@ -35,13 +35,13 @@ function HolidayModal({
           }}
         >
           <h3
-  style={{
-    margin: 0,
-    color: "#005bbb",
-  }}
->
-  {formData.holiday_id ? "Edit Holiday" : "Add Holiday"}
-</h3>
+            style={{
+              margin: 0,
+              color: "#005bbb",
+            }}
+          >
+            {formData.holiday_id ? "Edit Holiday" : "Add Holiday"}
+          </h3>
           <button
             onClick={onClose}
             style={{
@@ -181,13 +181,13 @@ function HolidayModal({
                 fontWeight: 700,
               }}
             >
-             {
-  isPending
-    ? "Saving..."
-    : formData.holiday_id
-      ? "Update Holiday"
-      : "Add Holiday"
-}
+              {
+                isPending
+                  ? "Saving..."
+                  : formData.holiday_id
+                    ? "Update Holiday"
+                    : "Add Holiday"
+              }
             </button>
           </div>
         </form>
@@ -212,86 +212,86 @@ import { useHolidays } from '../hooks/useHolidays';
 
 function Holidays() {
 
- const { data: holidays = [], isLoading } = useHolidays();
+  const { data: holidays = [], isLoading } = useHolidays();
 
-const [showModal, setShowModal] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
-const [editingHoliday, setEditingHoliday] = useState(null);
+  const [editingHoliday, setEditingHoliday] = useState(null);
 
-const [formData, setFormData] = useState({
-  holiday_name: '',
-  holiday_date: '',
-  description: '',
-});
-
-const [search, setSearch] = useState("");
-
-const handleEdit = (holiday) => {
-  setEditingHoliday(holiday);
-
-  setFormData({
-    holiday_id: holiday.holiday_id,
-    holiday_name: holiday.holiday_name,
-    holiday_date: holiday.holiday_date,
-    description: holiday.description || "",
+  const [formData, setFormData] = useState({
+    holiday_name: '',
+    holiday_date: '',
+    description: '',
   });
 
-  setShowModal(true);
-};
+  const [search, setSearch] = useState("");
 
-const handleDelete = async (holiday) => {
-  const confirmed = window.confirm(
-    `Delete ${holiday.holiday_name}?`
-  );
-
-  if (!confirmed) return;
-
-  try {
-    await deleteHoliday.mutateAsync(
-      holiday.holiday_id
-    );
-  } catch (err) {
-    alert('Failed to delete holiday');
-  }
-};
-
-
-
-const handleSubmit = async (e) => {
-  e.preventDefault();
-
-  try {
-    if (editingHoliday) {
-  await updateHoliday.mutateAsync({
-    id: editingHoliday.holiday_id,
-    data: formData,
-  });
-} else {
-  await createHoliday.mutateAsync(formData);
-}
-
-    setShowModal(false);
-
-    setEditingHoliday(null);
-
+  const handleEdit = (holiday) => {
+    setEditingHoliday(holiday);
 
     setFormData({
-      holiday_name: '',
-      holiday_date: '',
-      description: '',
+      holiday_id: holiday.holiday_id,
+      holiday_name: holiday.holiday_name,
+      holiday_date: holiday.holiday_date,
+      description: holiday.description || "",
     });
-  } catch (err) {
-    alert(err.message || 'Failed to create holiday');
-  }
-};
+
+    setShowModal(true);
+  };
+
+  const handleDelete = async (holiday) => {
+    const confirmed = window.confirm(
+      `Delete ${holiday.holiday_name}?`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await deleteHoliday.mutateAsync(
+        holiday.holiday_id
+      );
+    } catch (err) {
+      alert('Failed to delete holiday');
+    }
+  };
+
+
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      if (editingHoliday) {
+        await updateHoliday.mutateAsync({
+          id: editingHoliday.holiday_id,
+          data: formData,
+        });
+      } else {
+        await createHoliday.mutateAsync(formData);
+      }
+
+      setShowModal(false);
+
+      setEditingHoliday(null);
+
+
+      setFormData({
+        holiday_name: '',
+        holiday_date: '',
+        description: '',
+      });
+    } catch (err) {
+      alert(err.message || 'Failed to create holiday');
+    }
+  };
 
 
 
 
-const createHoliday = useCreateHoliday();
+  const createHoliday = useCreateHoliday();
 
-const updateHoliday = useUpdateHoliday();
-const deleteHoliday = useDeleteHoliday();
+  const updateHoliday = useUpdateHoliday();
+  const deleteHoliday = useDeleteHoliday();
 
 
 
@@ -303,11 +303,11 @@ const deleteHoliday = useDeleteHoliday();
     );
   }
 
-const filteredHolidays = holidays.filter((holiday) =>
-  holiday.holiday_name
-    .toLowerCase()
-    .includes(search.toLowerCase())
-);
+  const filteredHolidays = holidays.filter((holiday) =>
+    holiday.holiday_name
+      .toLowerCase()
+      .includes(search.toLowerCase())
+  );
 
   return (
     <Layout>
@@ -323,22 +323,22 @@ const filteredHolidays = holidays.filter((holiday) =>
           </div>
 
           <button
-  className="primary-btn"
-  onClick={() => {
-    console.log("BUTTON CLICKED");
-    setShowModal(true);
-  }}
->
-  + Add Holiday
-</button>
+            className="primary-btn"
+            onClick={() => {
+              console.log("BUTTON CLICKED");
+              setShowModal(true);
+            }}
+          >
+            + Add Holiday
+          </button>
         </div>
 
         <div className="employee-toolbar">
-         <input
-  placeholder="Search holidays..."
-  value={search}
-  onChange={(e) => setSearch(e.target.value)}
-/>
+          <input
+            placeholder="Search holidays..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
           <button className="filter-btn">Filter ⌄</button>
         </div>
 
@@ -356,32 +356,32 @@ const filteredHolidays = holidays.filter((holiday) =>
             </thead>
 
             <tbody>
-          {filteredHolidays.map((holiday) => (
-               <tr key={holiday.holiday_id}>
-  <td>HOL{String(holiday.holiday_id).padStart(3, "0")}</td>
-  <td>{holiday.holiday_name}</td>
-  <td>{holiday.holiday_date}</td>
-  <td>Public Holiday</td>
-  <td>
-    <span className="status-approved">Active</span>
-  </td>
-  <td>
-    <div className="table-actions">
-      <button
-  className="edit-btn"
-  onClick={() => handleEdit(holiday)}
->
-  ✎
-</button>
-      <button
-  className="delete-btn"
-  onClick={() => handleDelete(holiday)}
->
-  🗑
-</button>
-    </div>
-  </td>
-</tr>
+              {filteredHolidays.map((holiday) => (
+                <tr key={holiday.holiday_id}>
+                  <td>HOL{String(holiday.holiday_id).padStart(3, "0")}</td>
+                  <td>{holiday.holiday_name}</td>
+                  <td>{holiday.holiday_date}</td>
+                  <td>Public Holiday</td>
+                  <td>
+                    <span className="status-approved">Active</span>
+                  </td>
+                  <td>
+                    <div className="table-actions">
+                      <button
+                        className="edit-btn"
+                        onClick={() => handleEdit(holiday)}
+                      >
+                        ✎
+                      </button>
+                      <button
+                        className="delete-btn"
+                        onClick={() => handleDelete(holiday)}
+                      >
+                        🗑
+                      </button>
+                    </div>
+                  </td>
+                </tr>
               ))}
             </tbody>
           </table>
@@ -390,15 +390,15 @@ const filteredHolidays = holidays.filter((holiday) =>
         </div>
       </section>
 
-{showModal && (
-  <HolidayModal
-    formData={formData}
-    setFormData={setFormData}
-    onClose={() => setShowModal(false)}
-    onSubmit={handleSubmit}
-    isPending={createHoliday.isPending}
-  />
-)}
+      {showModal && (
+        <HolidayModal
+          formData={formData}
+          setFormData={setFormData}
+          onClose={() => setShowModal(false)}
+          onSubmit={handleSubmit}
+          isPending={createHoliday.isPending}
+        />
+      )}
 
 
     </Layout>

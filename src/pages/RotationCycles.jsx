@@ -339,24 +339,26 @@ function RotationCycles() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: QUERY_KEYS.ROTATIONS });
       setSuccessMsg("Rotation cycle deleted.");
-      
+
       setTimeout(() => setSuccessMsg(""), 3000);
     },
-    onError: (err) => {setErrorMsg(err.message);
-    setDeleteCycles(null);
+    onError: (err) => {
+      setErrorMsg(err.message);
+      setDeleteCycles(null);
       setTimeout(() => setErrorMsg(""), 6000);
     }
   });
 
   const handleDelete = (cycle) => {
-   setDeleteCycles(cycle);
+    setDeleteCycles(cycle);
   };
 
   const confirmDelete = () => {
     if (!deleteCycles) return;
 
-    deleteCycle.mutate(deleteCycles.rotation_id,{
-      onSuccess: () => { setDeleteCycles(null);
+    deleteCycle.mutate(deleteCycles.rotation_id, {
+      onSuccess: () => {
+        setDeleteCycles(null);
       }
     });
   };

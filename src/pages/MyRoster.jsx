@@ -118,10 +118,10 @@ function MyRoster() {
   // Stats
   const scheduled = rosterList.filter((r) => r.status === "Scheduled").length;
   const offDays = rosterList.filter((r) => r.status === "Off").length;
-  const holidays = new Set( rosterList
+  const holidays = new Set(rosterList
     .filter((r) => r.is_public_holiday)
     .map((r) => r.roster_date)
-).size;
+  ).size;
 
   const handlePrev = () => setOffset((o) => o - 1);
   const handleNext = () => setOffset((o) => o + 1);
