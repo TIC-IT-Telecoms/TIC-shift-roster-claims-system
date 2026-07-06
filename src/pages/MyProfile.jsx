@@ -1,126 +1,87 @@
+// src/pages/MyProfile.jsx
 import { useState } from "react";
 import Layout from "../components/Layout";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { profileApi } from "../api/profileApi";
 import { QUERY_KEYS } from "../utils/queryKeys";
 import {
-  formatDate, formatRole,
-  formatSupervisor,
-  getInitials, formatDateTime
+  formatDate, formatRole, formatSupervisor,
+  getInitials, formatDateTime,
 } from "../utils/helpers";
-
-// ===== Shared input style helper =====
-const inputStyle = (focused = false) => ({
-  width: "100%", padding: "6px 10px",
-  border: `1px solid ${focused ? "#006fd6" : "#d0d5dd"}`,
-  borderRadius: 6, fontSize: 13,
-  outline: "none", marginTop: 4,
-  fontFamily: "inherit", boxSizing: "border-box",
-});
 
 // ===== Reusable components =====
 const InfoItem = ({ label, value, children }) => (
-  <div className="info-item">
-    <span>{label}</span>
-    {children ?? <strong>{value || "—"}</strong>}
+  <div className="py-3 border-b border-[#edf2f7] last:border-0">
+    <span className="block text-xs text-[#667085] mb-1">{label}</span>
+    {children ?? <strong className="text-sm text-[#101828]">{value || "—"}</strong>}
   </div>
 );
 
 const StatusPill = ({ status }) => (
-  <span style={{
-    background: status === "Active" ? "#e8f8ef" : "#fee4e2",
-    color: status === "Active" ? "#157347" : "#b42318",
-    padding: "3px 10px", borderRadius: 999,
-    fontSize: 12, fontWeight: 700,
-  }}>
+  <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
+    status === "Active"
+      ? "bg-[#e8f8ef] text-[#157347]"
+      : "bg-[#fee4e2] text-[#b42318]"
+  }`}>
     {status || "—"}
   </span>
 );
 
 const FeedbackBanner = ({ type, message }) => {
   if (!message) return null;
-  const ok = type === "success";
   return (
-    <div style={{
-      background: ok ? "#e8f8ef" : "#fee4e2",
-      border: `1px solid ${ok ? "#bbf7d0" : "#fecaca"}`,
-      color: ok ? "#157347" : "#b42318",
-      padding: "10px 16px", borderRadius: 8,
-      marginBottom: 16, fontSize: 13,
-    }}>
-      {ok ? "✓" : "✕"} {message}
+    <div className={`flex items-center gap-2 px-4 py-3 rounded-lg mb-4 text-sm font-medium border ${
+      type === "success"
+        ? "bg-[#e8f8ef] border-[#bbf7d0] text-[#157347]"
+        : "bg-[#fee4e2] border-[#fecaca] text-[#b42318]"
+    }`}>
+      {type === "success" ? "✓" : "✕"} {message}
     </div>
   );
 };
 
-// ===== Main component =====
+const inp = "w-full mt-1 px-3 py-2 border border-[#d0d5dd] rounded-md text-sm outline-none focus:border-[#006fd6] font-[inherit] box-border";
+
+// ===== Main =====
 function MyProfile() {
   const qc = useQueryClient();
+  const [editMode,              setEditMode]              = useState(false);
+  const [phoneForm,             setPhoneForm]             = useState("");
+  const [addressForm,           setAddressForm]           = useState("");
+  const [showPasswordSection,   setShowPasswordSection]   = useState(false);
+  const [passwordForm,          setPasswordForm]          = useState({ old_password: "", new_password: "", confirm_password: "" });
+  const [successMsg,            setSuccessMsg]            = useState("");
+  const [errorMsg,              setErrorMsg]              = useState("");
 
-  const [editMode, setEditMode] = useState(false);
-  const [phoneForm, setPhoneForm] = useState("");
-  const [addressForm, setAddressForm] = useState("");
-  const [showPasswordSection, setShowPasswordSection] = useState(false);
-  const [passwordForm, setPasswordForm] = useState({
-    old_password: "", new_password: "", confirm_password: "",
-  });
-  const [successMsg, setSuccessMsg] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
-
-  // ===== Fetch profile =====
   const { data: profile, isLoading } = useQuery({
     queryKey: QUERY_KEYS.PROFILE,
-    queryFn: profileApi.getProfile,
-    select: (d) => d.data,
+    queryFn:  profileApi.getProfile,
+    select:   (d) => d.data,
   });
 
-  // API shape: { user_id, username, role, created_at, last_login, employee: { ... } }
   const user = profile;
-  const emp = profile?.employee;
+  const emp  = profile?.employee;
   const supervisor = emp?.supervisor;
 
-  // ===== Mutations =====
   const updatePhone = useMutation({
     mutationFn: profileApi.updatePhone,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: QUERY_KEYS.PROFILE });
-      setSuccessMsg("Profile updated successfully.");
-      setEditMode(false);
-      setErrorMsg("");
-    },
-    onError: (err) => { setErrorMsg(err.message); setSuccessMsg(""); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: QUERY_KEYS.PROFILE }); setSuccessMsg("Profile updated."); setEditMode(false); setErrorMsg(""); },
+    onError: (e) => { setErrorMsg(e.message); setSuccessMsg(""); },
   });
 
   const updateAddress = useMutation({
     mutationFn: profileApi.updateAddress,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: QUERY_KEYS.PROFILE });
-      setSuccessMsg("Profile updated successfully.");
-      setEditMode(false);
-      setErrorMsg("");
-    },
-    onError: (err) => { setErrorMsg(err.message); setSuccessMsg(""); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: QUERY_KEYS.PROFILE }); setSuccessMsg("Profile updated."); setEditMode(false); setErrorMsg(""); },
+    onError: (e) => { setErrorMsg(e.message); setSuccessMsg(""); },
   });
 
   const changePassword = useMutation({
     mutationFn: profileApi.changePassword,
-    onSuccess: () => {
-      setSuccessMsg("Password changed. Please log in again.");
-      setShowPasswordSection(false);
-      setPasswordForm({ old_password: "", new_password: "", confirm_password: "" });
-      setErrorMsg("");
-    },
-    onError: (err) => { setErrorMsg(err.message); setSuccessMsg(""); },
+    onSuccess: () => { setSuccessMsg("Password changed. Please log in again."); setShowPasswordSection(false); setPasswordForm({ old_password: "", new_password: "", confirm_password: "" }); setErrorMsg(""); },
+    onError: (e) => { setErrorMsg(e.message); setSuccessMsg(""); },
   });
 
-  // ===== Handlers =====
-  const openEdit = () => {
-    setPhoneForm(emp?.phone || "");
-    setAddressForm(emp?.address || "");
-    setEditMode(true);
-    setSuccessMsg("");
-    setErrorMsg("");
-  };
+  const openEdit = () => { setPhoneForm(emp?.phone || ""); setAddressForm(emp?.address || ""); setEditMode(true); setSuccessMsg(""); setErrorMsg(""); };
 
   const handleSave = async () => {
     setErrorMsg("");
@@ -130,63 +91,89 @@ function MyProfile() {
     if (addressForm.trim() && addressForm.trim() !== emp?.address)
       promises.push(updateAddress.mutateAsync(addressForm.trim()));
     if (!promises.length) { setEditMode(false); return; }
-    try { await Promise.all(promises); }
-    catch (err) { setErrorMsg(err.message); }
+    try { await Promise.all(promises); } catch (e) { setErrorMsg(e.message); }
   };
 
   const handlePasswordChange = () => {
     setErrorMsg("");
     const { old_password, new_password, confirm_password } = passwordForm;
-    if (!old_password || !new_password || !confirm_password) {
-      setErrorMsg("All password fields are required."); return;
-    }
-    if (new_password !== confirm_password) {
-      setErrorMsg("New passwords do not match."); return;
-    }
+    if (!old_password || !new_password || !confirm_password) { setErrorMsg("All password fields are required."); return; }
+    if (new_password !== confirm_password) { setErrorMsg("New passwords do not match."); return; }
     changePassword.mutate(passwordForm);
   };
 
   const isSaving = updatePhone.isPending || updateAddress.isPending;
 
-  if (isLoading) {
-    return (
-      <Layout>
-        <section className="content">
-          <p style={{ color: "#667085", fontSize: 13 }}>Loading profile...</p>
-        </section>
-      </Layout>
-    );
-  }
+  if (isLoading) return (
+    <Layout>
+      <section className="p-4">
+        <p className="text-sm text-[#667085]">Loading profile...</p>
+      </section>
+    </Layout>
+  );
 
   return (
     <Layout>
-      <section className="content">
-        <div className="breadcrumb">Dashboard &gt; My Profile</div>
+      <section className="p-4 md:p-5">
+        <p className="text-xs text-[#667085] mb-4">Dashboard &gt; My Profile</p>
 
         <FeedbackBanner type="success" message={successMsg} />
-        <FeedbackBanner type="error" message={errorMsg} />
+        <FeedbackBanner type="error"   message={errorMsg} />
 
-        <div className="profile-design-grid">
+        {/* ===== Avatar card — always full-width, centred on mobile ===== */}
+        <div className="bg-white border border-[#e6edf5] rounded-xl p-5 mb-4 flex flex-col items-center text-center">
+          <div className="w-20 h-20 rounded-full bg-[#eaf4ff] text-[#006fd6] flex items-center justify-center text-2xl font-extrabold mb-3">
+            {emp?.profile_picture
+              ? <img src={emp.profile_picture} alt="Profile" className="w-full h-full rounded-full object-cover" />
+              : getInitials(emp?.name)}
+          </div>
+          <h3 className="m-0 text-base font-bold text-[#1d2939]">{emp?.name || "—"}</h3>
+          <p className="text-sm text-[#667085] mt-1 mb-2 capitalize">
+            {emp?.employment_type || formatRole(user?.role)}
+          </p>
+          <StatusPill status={emp?.status} />
 
-          {/* ===== Personal Information ===== */}
-          <div className="profile-info-card">
-            <div className="card-title-row">
-              <h3>Personal Information</h3>
+          {/* Quick info strip */}
+          <div className="mt-4 pt-4 border-t border-[#edf2f7] w-full grid grid-cols-2 gap-x-4 text-left">
+            {[
+              { label: "Employee ID", value: `EMP${String(emp?.employee_id || "").padStart(3, "0")}` },
+              { label: "Team",        value: emp?.team?.team_name },
+              { label: "Role",        value: formatRole(user?.role) },
+              { label: "Type",        value: emp?.employment_type },
+            ].map(({ label, value }) => (
+              <div key={label} className="py-2">
+                <span className="block text-[10px] text-[#667085]">{label}</span>
+                <strong className="text-xs text-[#1d2939]">{value || "—"}</strong>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ===== Main grid: stacked mobile, 2-col desktop ===== */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          {/* Personal Information */}
+          <div className="bg-white border border-[#e6edf5] rounded-xl p-5">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="m-0 text-[15px] font-bold text-[#1d2939]">Personal Information</h3>
               {!editMode ? (
-                <button className="small-edit-btn" onClick={openEdit}>Edit</button>
+                <button
+                  onClick={openEdit}
+                  className="bg-[#eaf4ff] text-[#006fd6] border border-[#cfe6ff] rounded-lg px-3 py-1.5 text-xs font-bold cursor-pointer"
+                >
+                  Edit
+                </button>
               ) : (
-                <div style={{ display: "flex", gap: 8 }}>
+                <div className="flex gap-2">
                   <button
-                    className="small-edit-btn"
-                    onClick={handleSave}
-                    disabled={isSaving}
-                    style={{ background: "#006fd6", color: "white", border: "none" }}
+                    onClick={handleSave} disabled={isSaving}
+                    className="bg-[#006fd6] text-white border-none rounded-lg px-3 py-1.5 text-xs font-bold cursor-pointer"
                   >
                     {isSaving ? "Saving..." : "Save"}
                   </button>
                   <button
-                    className="small-edit-btn"
                     onClick={() => { setEditMode(false); setErrorMsg(""); }}
+                    className="bg-[#eaf4ff] text-[#006fd6] border border-[#cfe6ff] rounded-lg px-3 py-1.5 text-xs font-bold cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -194,116 +181,83 @@ function MyProfile() {
               )}
             </div>
 
-            <InfoItem label="Full Name" value={emp?.name} />
-
-            <InfoItem label="Employee ID">
-              <strong>EMP{String(emp?.employee_id || "").padStart(3, "0")}</strong>
-            </InfoItem>
-
-            <InfoItem label="Email" value={emp?.email} />
+            <InfoItem label="Full Name"   value={emp?.name} />
+            <InfoItem label="Employee ID"><strong className="text-sm text-[#101828]">EMP{String(emp?.employee_id || "").padStart(3, "0")}</strong></InfoItem>
+            <InfoItem label="Email"       value={emp?.email} />
 
             <InfoItem label="Phone">
-              {editMode ? (
-                <input
-                  type="tel" value={phoneForm}
-                  onChange={(e) => setPhoneForm(e.target.value)}
-                  placeholder="e.g. 0821234567"
-                  style={inputStyle(true)}
-                />
-              ) : (
-                <strong>{emp?.phone || "Not set"}</strong>
-              )}
+              {editMode
+                ? <input type="tel" value={phoneForm} onChange={(e) => setPhoneForm(e.target.value)} placeholder="e.g. 0821234567" className={inp} />
+                : <strong className="text-sm text-[#101828]">{emp?.phone || "Not set"}</strong>}
             </InfoItem>
 
-            <InfoItem label="ID Number" value={emp?.id_number} />
+            <InfoItem label="ID Number"   value={emp?.id_number} />
 
             <InfoItem label="Address">
-              {editMode ? (
-                <textarea
-                  value={addressForm}
-                  onChange={(e) => setAddressForm(e.target.value)}
-                  placeholder="e.g. Polokwane, Limpopo, South Africa"
-                  rows={2}
-                  style={{ ...inputStyle(true), resize: "vertical" }}
-                />
-              ) : (
-                <strong>{emp?.address || "Not set"}</strong>
-              )}
+              {editMode
+                ? <textarea value={addressForm} onChange={(e) => setAddressForm(e.target.value)} placeholder="e.g. Polokwane, Limpopo" rows={2} className={`${inp} resize-y`} />
+                : <strong className="text-sm text-[#101828]">{emp?.address || "Not set"}</strong>}
             </InfoItem>
 
-            <InfoItem label="Status">
-              <StatusPill status={emp?.status} />
-            </InfoItem>
+            <InfoItem label="Status"><StatusPill status={emp?.status} /></InfoItem>
           </div>
 
-          {/* ===== Work Information ===== */}
-          <div className="profile-info-card">
-            <h3>Work Information</h3>
+          {/* Work Information */}
+          <div className="bg-white border border-[#e6edf5] rounded-xl p-5">
+            <h3 className="m-0 text-[15px] font-bold text-[#1d2939] mb-3">Work Information</h3>
 
-            <InfoItem label="Team" value={emp?.team?.team_name} />
-
-            <InfoItem label="Role">
-              <strong>{formatRole(user?.role)}</strong>
-            </InfoItem>
-
-            <InfoItem label="Hourly Rate">
-              <strong>R{Number(emp?.hourly_rate || 0).toFixed(2)} / hour</strong>
-            </InfoItem>
-
+            <InfoItem label="Team"            value={emp?.team?.team_name} />
+            <InfoItem label="Role"><strong className="text-sm text-[#101828]">{formatRole(user?.role)}</strong></InfoItem>
+            <InfoItem label="Hourly Rate"><strong className="text-sm text-[#101828]">R{Number(emp?.hourly_rate || 0).toFixed(2)} / hour</strong></InfoItem>
             <InfoItem label="Employment Type" value={emp?.employment_type} />
-
-            <InfoItem label="Join Date">
-              <strong>{formatDate(emp?.created_at)}</strong>
-            </InfoItem>
-
-            <InfoItem label="Supervisor">
-              <strong>{formatSupervisor(supervisor)}</strong>
-            </InfoItem>
-
-            <InfoItem label="Username" value={user?.username} />
-
-            <InfoItem label="Last Login">
-              <strong>
-                {user?.last_login
-                  ? formatDateTime(user.last_login)
-                  : "—"}
-              </strong>
-            </InfoItem>
+            <InfoItem label="Join Date"><strong className="text-sm text-[#101828]">{formatDate(emp?.created_at)}</strong></InfoItem>
+            <InfoItem label="Supervisor"><strong className="text-sm text-[#101828]">{formatSupervisor(supervisor)}</strong></InfoItem>
+            <InfoItem label="Username"        value={user?.username} />
+            <InfoItem label="Last Login"><strong className="text-sm text-[#101828]">{user?.last_login ? formatDateTime(user.last_login) : "—"}</strong></InfoItem>
           </div>
 
-          {/* ===== Avatar Side Card ===== */}
-          <div className="profile-side-card">
-            <div className="profile-avatar big">
-              {emp?.profile_picture ? (
-                <img
-                  src={emp.profile_picture}
-                  alt="Profile"
-                  style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }}
-                />
-              ) : (
-                getInitials(emp?.name)
-              )}
+          {/* Change Password */}
+          <div className="bg-white border border-[#e6edf5] rounded-xl p-5 md:col-span-2">
+            <div className="flex justify-between items-center">
+              <h3 className="m-0 text-[15px] font-bold text-[#1d2939]">Change Password</h3>
+              <button
+                onClick={() => setShowPasswordSection((v) => !v)}
+                className="bg-[#eaf4ff] text-[#006fd6] border border-[#cfe6ff] rounded-lg px-3 py-1.5 text-xs font-bold cursor-pointer"
+              >
+                {showPasswordSection ? "Cancel" : "Change"}
+              </button>
             </div>
 
-            <h3>{emp?.name || "—"}</h3>
-            <p style={{ textTransform: "capitalize", color: "#667085", margin: "4px 0 12px" }}>
-              {emp?.employment_type || formatRole(user?.role)}
-            </p>
+            {showPasswordSection && (
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {[
+                  { label: "Current Password",  key: "old_password" },
+                  { label: "New Password",       key: "new_password" },
+                  { label: "Confirm Password",   key: "confirm_password" },
+                ].map(({ label, key }) => (
+                  <div key={key}>
+                    <label className="block text-xs text-[#344054] font-bold mb-1">{label}</label>
+                    <input
+                      type="password"
+                      value={passwordForm[key]}
+                      onChange={(e) => setPasswordForm((f) => ({ ...f, [key]: e.target.value }))}
+                      className={inp}
+                    />
+                  </div>
+                ))}
 
-            <StatusPill status={emp?.status} />
-
-            <div style={{ marginTop: 20, borderTop: "1px solid #edf2f7", paddingTop: 16, textAlign: "left", width: "100%" }}>
-              <InfoItem label="Employee ID">
-                <strong>EMP{String(emp?.employee_id || "").padStart(3, "0")}</strong>
-              </InfoItem>
-              <InfoItem label="Team" value={emp?.team?.team_name} />
-              <InfoItem label="Role">
-                <strong>{formatRole(user?.role)}</strong>
-              </InfoItem>
-              <InfoItem label="Employment Type" value={emp?.employment_type} />
-            </div>
+                <div className="sm:col-span-3 flex justify-end mt-1">
+                  <button
+                    onClick={handlePasswordChange}
+                    disabled={changePassword.isPending}
+                    className="bg-[#006fd6] text-white border-none rounded-lg px-5 py-2.5 text-sm font-bold cursor-pointer"
+                  >
+                    {changePassword.isPending ? "Saving..." : "Update Password"}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-
         </div>
       </section>
     </Layout>
