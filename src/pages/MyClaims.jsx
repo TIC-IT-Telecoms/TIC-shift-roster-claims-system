@@ -51,21 +51,21 @@ function ClaimModal({ claim, onClose, hourlyRate }) {
           {/* Shift details grid */}
           <p className="text-[10px] font-bold text-[#667085] uppercase mb-2">Shift Details</p>
           <div className="grid grid-cols-2 gap-2 mb-4">
-            <DetailCell label="Shift Type"     value={claim.shift_type} />
-            <DetailCell label="Claim Date"     value={claim.claim_date} />
-            <DetailCell label="Hours Worked"   value={`${claim.hours_worked}h`} />
-            <DetailCell label="Overtime"       value={`${claim.overtime_hours}h`} />
+            <DetailCell label="Shift Type" value={claim.shift_type} />
+            <DetailCell label="Claim Date" value={claim.claim_date} />
+            <DetailCell label="Hours Worked" value={`${claim.hours_worked}h`} />
+            <DetailCell label="Overtime" value={`${claim.overtime_hours}h`} />
             <DetailCell label="Public Holiday" value={claim.is_holiday ? "Yes 🌟" : "No"} />
-            <DetailCell label="Submitted"      value={formatDate(claim.created_at)} />
+            <DetailCell label="Submitted" value={formatDate(claim.created_at)} />
           </div>
 
           {/* Earnings breakdown */}
           <p className="text-[10px] font-bold text-[#667085] uppercase mb-2">Earnings Breakdown</p>
           <div className="border border-[#e6edf5] rounded-lg overflow-hidden mb-4">
             {[
-              { label: "Normal Pay",          value: formatZAR(normal) },
+              { label: "Normal Pay", value: formatZAR(normal) },
               { label: "Overtime Pay (×1.5)", value: formatZAR(overtime) },
-              { label: "Holiday Pay",         value: formatZAR(holiday) },
+              { label: "Holiday Pay", value: formatZAR(holiday) },
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between px-4 py-2.5 border-b border-[#edf2f7] text-sm">
                 <span className="text-[#667085]">{label}</span>
@@ -90,9 +90,8 @@ function ClaimModal({ claim, onClose, hourlyRate }) {
           {claim.approval?.notes && (
             <div className="mb-4">
               <p className="text-[10px] font-bold text-[#667085] uppercase mb-1">Admin Notes</p>
-              <p className={`text-sm text-[#344054] px-4 py-2.5 rounded-lg m-0 border ${
-                isRejected ? "bg-[#fff8f8] border-[#fecaca]" : "bg-[#f4f8fd] border-[#e6edf5]"
-              }`}>{claim.approval.notes}</p>
+              <p className={`text-sm text-[#344054] px-4 py-2.5 rounded-lg m-0 border ${isRejected ? "bg-[#fff8f8] border-[#fecaca]" : "bg-[#f4f8fd] border-[#e6edf5]"
+                }`}>{claim.approval.notes}</p>
             </div>
           )}
 
@@ -122,20 +121,20 @@ function MyClaims() {
 
   const { data: profile } = useQuery({
     queryKey: QUERY_KEYS.PROFILE,
-    queryFn:  profileApi.getProfile,
-    select:   (d) => d.data,
+    queryFn: profileApi.getProfile,
+    select: (d) => d.data,
   });
   const hourlyRate = Number(profile?.employee?.hourly_rate || 0);
 
   const { data: allClaims, isLoading, isError } = useQuery({
     queryKey: QUERY_KEYS.MY_CLAIMS({}),
-    queryFn:  () => claimApi.getMyClaims({}),
-    select:   (d) => d.data,
+    queryFn: () => claimApi.getMyClaims({}),
+    select: (d) => d.data,
   });
 
   const counts = {
-    All:      allClaims?.length || 0,
-    Pending:  allClaims?.filter((c) => c.status === "Pending").length  || 0,
+    All: allClaims?.length || 0,
+    Pending: allClaims?.filter((c) => c.status === "Pending").length || 0,
     Approved: allClaims?.filter((c) => c.status === "Approved").length || 0,
     Rejected: allClaims?.filter((c) => c.status === "Rejected").length || 0,
   };
@@ -165,22 +164,23 @@ function MyClaims() {
 
         {/* Tabs — horizontally scrollable on mobile */}
         <div className="overflow-x-auto -mx-4 px-4 mb-4">
-          <div className="flex gap-0 border-b border-[#e6edf5] min-w-max">
+          <div className="flex border-b border-gray-200 min-w-max">
             {TABS.map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2.5 text-sm font-bold bg-transparent border-none cursor-pointer whitespace-nowrap transition-colors ${
-                  activeTab === tab
-                    ? "text-[#006fd6] border-b-2 border-[#006fd6]"
-                    : "text-[#667085]"
-                }`}
+                className={`px-4 py-2.5 text-sm font-bold whitespace-nowrap transition-colors
+          ${activeTab === tab
+                    ? "text-blue-600 border-b-2 border-blue-600"
+                    : "text-gray-500"
+                  }`}
               >
                 {tab} ({counts[tab]})
               </button>
             ))}
           </div>
         </div>
+
 
         {/* ===== Mobile: card list | Desktop: table ===== */}
         <div className="bg-white border border-[#e6edf5] rounded-xl p-4">

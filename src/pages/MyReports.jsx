@@ -28,7 +28,7 @@ const exportCSV = (filename, headers, rows) => {
   URL.revokeObjectURL(url);
 };
 
-// ===== Print/PDF helper — opens printable window =====
+// ===== Print/PDF helper =====
 const exportPDF = (title, htmlContent) => {
   const win = window.open("", "_blank");
   win.document.write(`
@@ -65,38 +65,26 @@ const exportPDF = (title, htmlContent) => {
 
 // ===== Date range picker =====
 const DateRangePicker = ({ startDate, endDate, onStartChange, onEndChange }) => (
-  <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+  <div className="flex flex-wrap items-center gap-4">
     <div>
-      <label style={{ fontSize: 12, color: "#667085", display: "block", marginBottom: 4 }}>
-        From
-      </label>
+      <label className="block text-xs text-gray-500 mb-1">From</label>
       <input
         type="date"
         value={startDate}
         max={endDate}
         onChange={(e) => onStartChange(e.target.value)}
-        style={{
-          padding: "8px 12px", border: "1px solid #d0d5dd",
-          borderRadius: 8, fontSize: 13, outline: "none",
-          color: "#344054",
-        }}
+        className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 focus:border-blue-600 focus:ring focus:ring-blue-200"
       />
     </div>
     <div>
-      <label style={{ fontSize: 12, color: "#667085", display: "block", marginBottom: 4 }}>
-        To
-      </label>
+      <label className="block text-xs text-gray-500 mb-1">To</label>
       <input
         type="date"
         value={endDate}
         min={startDate}
         max={today}
         onChange={(e) => onEndChange(e.target.value)}
-        style={{
-          padding: "8px 12px", border: "1px solid #d0d5dd",
-          borderRadius: 8, fontSize: 13, outline: "none",
-          color: "#344054",
-        }}
+        className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 focus:border-blue-600 focus:ring focus:ring-blue-200"
       />
     </div>
   </div>
@@ -283,11 +271,10 @@ function MyReports() {
       title: "Roster Report",
       description: "View your shift schedule for the selected date range.",
       btnLabel: "Export PDF",
-      btnColor: "#dc2626",
-      borderColor: "#fecaca",
+      btnColor: "bg-red-600 hover:bg-red-700",
       loading: loadingRoster,
       count: `${scheduledShifts.length} scheduled shifts`,
-      action: handleRosterPDF,
+      action: handleRosterPDF
     },
     {
       key: "claims",
@@ -295,11 +282,10 @@ function MyReports() {
       title: "Claims Report",
       description: "Download your submitted claims and status history.",
       btnLabel: "Export CSV",
-      btnColor: "#16a34a",
-      borderColor: "#bbf7d0",
+      btnColor: "bg-green-600 hover:bg-green-700",
       loading: loadingClaims,
       count: `${claims?.length || 0} claims (${approvedClaims.length} approved)`,
-      action: handleClaimsCSV,
+      action: handleClaimsCSV
     },
     {
       key: "payroll",
@@ -307,8 +293,7 @@ function MyReports() {
       title: "Payroll Report",
       description: "Export your earnings summary based on approved claims.",
       btnLabel: "Export PDF",
-      btnColor: "#dc2626",
-      borderColor: "#fecaca",
+      btnColor: "bg-red-600 hover:bg-red-700",
       loading: loadingClaims,
       count: `R${totalEarnings.toFixed(2)} total earnings`,
       action: handlePayrollPDF,
@@ -319,8 +304,7 @@ function MyReports() {
       title: "Compliance Report",
       description: "View overtime, rest period and public holiday compliance.",
       btnLabel: "Export CSV",
-      btnColor: "#006fd6",
-      borderColor: "#bfdbfe",
+      btnColor: "bg-green-600 hover:bg-green-700",
       loading: loadingClaims,
       count: `${approvedClaims.filter((c) => Number(c.overtime_hours || 0) > 0).length} overtime entries`,
       action: handleComplianceCSV,
@@ -329,22 +313,20 @@ function MyReports() {
 
   return (
     <Layout>
-      <section className="content">
-        <div className="breadcrumb">Dashboard &gt; My Reports</div>
+      <section className="p-6">
+        <div className="text-sm text-gray-500 mb-4">Dashboard &gt; My Reports</div>
 
-        <div className="page-title-row">
-          <div>
-            <h2>My Reports</h2>
-            <p className="subtitle">
-              Generate and export your roster, claims, and payroll reports.
-            </p>
-          </div>
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold">My Reports</h2>
+          <p className="text-gray-500 text-sm">
+            Generate and export your roster, claims, and payroll reports.
+          </p>
         </div>
 
         {/* ===== Date Range Picker ===== */}
-        <div className="panel" style={{ marginBottom: 18 }}>
-          <div className="panel-header" style={{ marginBottom: 14 }}>
-            <h3>Select Date Range</h3>
+        <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Select Date Range</h3>
           </div>
           <DateRangePicker
             startDate={startDate}
@@ -354,19 +336,18 @@ function MyReports() {
           />
 
           {/* Summary pills */}
-          <div style={{ display: "flex", gap: 12, marginTop: 16, flexWrap: "wrap" }}>
+          <div className="flex flex-wrap gap-3 mt-4">
             {[
-              { label: `${scheduledShifts.length} Shifts`, color: "#eaf4ff", text: "#006fd6" },
-              { label: `${claims?.length || 0} Claims`, color: "#fff3e5", text: "#b54708" },
-              { label: `${approvedClaims.length} Approved`, color: "#e8f8ef", text: "#157347" },
-              { label: `${totalHours}h Worked`, color: "#f1eaff", text: "#7a3aed" },
-              { label: `${totalOT}h Overtime`, color: "#fee4e2", text: "#b42318" },
-            ].map(({ label, color, text }) => (
-              <span key={label} style={{
-                background: color, color: text,
-                padding: "5px 14px", borderRadius: 999,
-                fontSize: 12, fontWeight: 700,
-              }}>
+              { label: `${scheduledShifts.length} Shifts`, bg: "bg-blue-50", text: "text-blue-600" },
+              { label: `${claims?.length || 0} Claims`, bg: "bg-orange-50", text: "text-orange-600" },
+              { label: `${approvedClaims.length} Approved`, bg: "bg-green-50", text: "text-green-600" },
+              { label: `${totalHours}h Worked`, bg: "bg-purple-50", text: "text-purple-600" },
+              { label: `${totalOT}h Overtime`, bg: "bg-red-50", text: "text-red-600" },
+            ].map(({ label, bg, text }) => (
+              <span
+                key={label}
+                className={`${bg} ${text} px-4 py-1 rounded-full text-xs font-bold`}
+              >
                 {label}
               </span>
             ))}
@@ -374,37 +355,31 @@ function MyReports() {
         </div>
 
         {/* ===== Report Cards ===== */}
-        <div className="reports-grid">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {reports.map((report) => (
-            <div key={report.key} className="report-card">
-              <div className="report-icon">{report.icon}</div>
-              <h3>{report.title}</h3>
-              <p>{report.description}</p>
-
-              {/* Count badge */}
-              <div className="flex items-start gap-2">
-                <p className="text-center" style={{
-                  fontSize: 12, fontWeight: 700, color: "#006fd6",
-                  background: "#eaf4ff", padding: "10px",
-                  borderRadius: 999, display: "inline-block"
-                }}>
+            <div
+              key={report.key}
+              className="bg-white border border-gray-200 rounded-xl p-6 flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-2xl">{report.icon}</span>
+                  <h3 className="text-lg font-semibold">{report.title}</h3>
+                </div>
+                <p className="text-gray-500 text-sm mb-3">{report.description}</p>
+                <p className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full inline-block">
                   {report.loading ? "Loading..." : report.count}
                 </p>
-
-                <button
-                  className="report-btn"
-                  onClick={report.action}
-                  disabled={report.loading || exporting === report.key}
-                  style={{
-                    border: `1px solid ${report.borderColor}`,
-                    color: report.btnColor,
-                    opacity: report.loading ? 0.6 : 1,
-                    cursor: report.loading ? "not-allowed" : "pointer",
-                  }}
-                >
-                  {exporting === report.key ? "Exporting..." : report.btnLabel}
-                </button>
               </div>
+
+              <button
+                className={`mt-4 px-4 py-2 rounded-lg font-bold text-sm border transition 
+                ${report.btnColor} text-white disabled:opacity-50`}
+                onClick={report.action}
+                disabled={report.loading || exporting === report.key}
+              >
+                {exporting === report.key ? "Exporting..." : report.btnLabel}
+              </button>
             </div>
           ))}
         </div>

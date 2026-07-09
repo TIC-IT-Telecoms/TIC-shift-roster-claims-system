@@ -54,7 +54,11 @@ function CycleModal({ cycle, teams, shifts, onClose, onSuccess }) {
   });
 
   const updateCycle = useMutation({
-    mutationFn: (data) => rotationApi.update(cycle.rotation_id, data),
+    mutationFn: async (data) => {
+      const { details, ...rotationData } = data;
+      await rotationApi.update(cycle.rotation_id, rotationData);
+      await rotationApi.updateDetails(cycle.rotation_id, details);
+    },
     onSuccess: () => { qc.invalidateQueries({ queryKey: QUERY_KEYS.ROTATIONS }); onSuccess("Rotation cycle updated successfully."); },
     onError: (err) => setError(err.message),
   });
