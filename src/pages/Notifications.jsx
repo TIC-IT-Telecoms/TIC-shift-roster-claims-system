@@ -91,30 +91,26 @@ function Notifications() {
 
   return (
     <Layout>
-      <section className="content">
-        <div className="breadcrumb">Dashboard &gt; Notifications</div>
+      <section className="p-6">
+        <div className="text-sm text-gray-500 mb-4">Dashboard &gt; Notifications</div>
 
-        <div className="page-title-row">
+        <div className="flex justify-between items-center mb-6">
           <div>
-            <h2>Notifications</h2>
-            <p className="subtitle">
+            <h2 className="text-xl font-semibold">Notifications</h2>
+            <p className="text-gray-500 text-sm flex items-center">
               Your latest system updates.
               {unreadCount > 0 && (
-                <span style={{
-                  marginLeft: 10, background: "#006fd6", color: "white",
-                  padding: "2px 8px", borderRadius: 999,
-                  fontSize: 11, fontWeight: 700,
-                }}>
+                <span className="ml-2 bg-blue-600 text-white px-2 py-0.5 rounded-full text-xs font-bold">
                   {unreadCount} new
                 </span>
               )}
             </p>
           </div>
 
-          <div style={{ display: "flex", gap: 10 }}>
+          <div className="flex gap-2">
             {readCount > 0 && (
               <button
-                className="cancel-btn"
+                className="border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg font-bold hover:bg-gray-100 disabled:opacity-50"
                 onClick={() => clearRead.mutate()}
                 disabled={clearRead.isPending}
               >
@@ -123,7 +119,7 @@ function Notifications() {
             )}
             {unreadCount > 0 && (
               <button
-                className="primary-btn"
+                className="bg-blue-600 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-blue-700 disabled:opacity-50"
                 onClick={() => markAllRead.mutate()}
                 disabled={markAllRead.isPending}
               >
@@ -134,11 +130,14 @@ function Notifications() {
         </div>
 
         {/* ===== Filter Tabs ===== */}
-        <div className="claims-tabs" style={{ marginBottom: 16 }}>
+        <div className="flex gap-6 border-b border-gray-200 mb-4">
           {FILTERS.map((f) => (
             <button
               key={f}
-              className={filter === f ? "active" : ""}
+              className={`pb-2 text-sm font-bold transition-colors ${filter === f
+                  ? "text-blue-600 border-b-2 border-blue-600"
+                  : "text-gray-500"
+                }`}
               onClick={() => setFilter(f)}
             >
               {f}
@@ -150,30 +149,25 @@ function Notifications() {
         </div>
 
         {/* ===== Notification List ===== */}
-        <div className="notification-card">
+        <div className="bg-white border border-gray-200 rounded-xl p-4">
           {isLoading ? (
-            <p style={{ color: "#667085", fontSize: 13, padding: "20px 0" }}>
-              Loading notifications...
-            </p>
-
+            <p className="text-gray-500 text-sm py-6">Loading notifications...</p>
           ) : isError ? (
-            <p style={{ color: "#b42318", fontSize: 13, padding: "20px 0" }}>
+            <p className="text-red-600 text-sm py-6">
               Failed to load notifications. Please refresh.
             </p>
-
           ) : filtered.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "48px 0", color: "#667085" }}>
-              <div style={{ fontSize: 36, marginBottom: 12 }}>🔔</div>
-              <p style={{ fontSize: 14, fontWeight: 700, margin: "0 0 6px" }}>
+            <div className="text-center py-12 text-gray-500">
+              <div className="text-4xl mb-3">🔔</div>
+              <p className="text-base font-bold mb-1">
                 {filter === "Unread" ? "All caught up!" : "No notifications"}
               </p>
-              <p style={{ fontSize: 13, margin: 0 }}>
+              <p className="text-sm">
                 {filter === "Unread"
                   ? "You have no unread notifications."
                   : "Notifications will appear here as activity occurs."}
               </p>
             </div>
-
           ) : (
             filtered.map((notif) => {
               const config = TYPE_CONFIG[notif.type] || TYPE_CONFIG.system;
@@ -184,65 +178,50 @@ function Notifications() {
               return (
                 <div
                   key={notif.notification_id}
-                  className="notification-item"
-                  style={{
-                    background: read ? "white" : `${config.bg}99`,
-                    cursor: isNavigable ? "pointer" : "default",
-                    transition: "background 0.2s",
-                    borderLeft: read ? "3px solid transparent" : `3px solid ${config.color}`,
-                  }}
+                  className={`flex items-start gap-3 p-4 mb-2 rounded-lg transition cursor-pointer ${read
+                      ? "bg-white border-l-4 border-transparent"
+                      : "bg-blue-50 border-l-4"
+                    }`}
+                  style={{ borderLeftColor: read ? "transparent" : config.color }}
                   onClick={() => handleClick(notif)}
                 >
                   {/* Unread dot */}
-                  <div style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    background: read ? "#d0d5dd" : config.color,
-                    marginTop: 8,
-                    flexShrink: 0,
-                    transition: "background 0.2s",
-                  }} />
+                  <div
+                    className={`w-2.5 h-2.5 rounded-full mt-2 shrink-0 ${read ? "bg-gray-300" : ""
+                      }`}
+                    style={{ background: read ? "#d0d5dd" : config.color }}
+                  />
 
                   {/* Type icon */}
-                  <div style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: "50%",
-                    background: read ? "#f4f8fd" : config.bg,
-                    border: `1px solid ${read ? "#e6edf5" : config.border}`,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 18,
-                    flexShrink: 0,
-                  }}>
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0"
+                    style={{
+                      background: read ? "#f4f8fd" : config.bg,
+                      border: `1px solid ${read ? "#e6edf5" : config.border}`,
+                    }}
+                  >
                     {config.icon}
                   </div>
 
                   {/* Content */}
-                  <div className="notification-content" style={{ flex: 1, minWidth: 0 }}>
-                    <h4 style={{
-                      color: read ? "#344054" : config.color,
-                      fontWeight: read ? 600 : 800,
-                      margin: "0 0 4px",
-                    }}>
+                  <div className="flex-1 min-w-0">
+                    <h4
+                      className={`text-sm font-bold mb-1 ${read ? "text-gray-700" : ""
+                        }`}
+                      style={{ color: read ? "#344054" : config.color }}
+                    >
                       {notif.title}
                     </h4>
-                    <p style={{
-                      margin: "0 0 4px",
-                      color: read ? "#667085" : "#344054",
-                      fontSize: 13,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}>
+                    <p className="text-sm text-gray-600 truncate mb-1">
                       {notif.message}
                     </p>
-                    <small style={{ color: "#98a2b3" }}>
+                    <small className="text-gray-400">
                       {formatTime(notif.created_at)}
                       {isNavigable && !read && (
-                        <span style={{ marginLeft: 8, color: config.color, fontWeight: 700 }}>
+                        <span
+                          className="ml-2 font-bold"
+                          style={{ color: config.color }}
+                        >
                           Tap to view →
                         </span>
                       )}
@@ -250,22 +229,15 @@ function Notifications() {
                   </div>
 
                   {/* Status pill + delete */}
-                  <div style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "flex-end",
-                    gap: 8,
-                    flexShrink: 0,
-                  }}>
-                    <span style={{
-                      background: read ? "#f2f4f7" : config.bg,
-                      color: read ? "#667085" : config.color,
-                      border: `1px solid ${read ? "#e6edf5" : config.border}`,
-                      padding: "3px 10px",
-                      borderRadius: 999,
-                      fontSize: 11,
-                      fontWeight: 700,
-                    }}>
+                  <div className="flex flex-col items-end gap-2 shrink-0">
+                    <span
+                      className="px-3 py-0.5 rounded-full text-xs font-bold"
+                      style={{
+                        background: read ? "#f2f4f7" : config.bg,
+                        color: read ? "#667085" : config.color,
+                        border: `1px solid ${read ? "#e6edf5" : config.border}`,
+                      }}
+                    >
                       {read ? "Read" : "New"}
                     </span>
 
@@ -276,18 +248,7 @@ function Notifications() {
                       }}
                       disabled={deleteNotif.isPending}
                       title="Delete notification"
-                      style={{
-                        background: "none",
-                        border: "none",
-                        color: "#d0d5dd",
-                        cursor: "pointer",
-                        fontSize: 14,
-                        padding: "2px 4px",
-                        borderRadius: 4,
-                        lineHeight: 1,
-                      }}
-                      onMouseEnter={(e) => (e.target.style.color = "#b42318")}
-                      onMouseLeave={(e) => (e.target.style.color = "#d0d5dd")}
+                      className="text-gray-300 hover:text-red-600 text-sm"
                     >
                       ✕
                     </button>
@@ -300,6 +261,7 @@ function Notifications() {
       </section>
     </Layout>
   );
+
 }
 
 export default Notifications;
