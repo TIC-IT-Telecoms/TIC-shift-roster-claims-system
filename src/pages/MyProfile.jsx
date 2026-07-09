@@ -1,4 +1,3 @@
-// src/pages/MyProfile.jsx
 import { useState } from "react";
 import Layout from "../components/Layout";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -18,11 +17,10 @@ const InfoItem = ({ label, value, children }) => (
 );
 
 const StatusPill = ({ status }) => (
-  <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
-    status === "Active"
+  <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${status === "Active"
       ? "bg-[#e8f8ef] text-[#157347]"
       : "bg-[#fee4e2] text-[#b42318]"
-  }`}>
+    }`}>
     {status || "—"}
   </span>
 );
@@ -30,11 +28,10 @@ const StatusPill = ({ status }) => (
 const FeedbackBanner = ({ type, message }) => {
   if (!message) return null;
   return (
-    <div className={`flex items-center gap-2 px-4 py-3 rounded-lg mb-4 text-sm font-medium border ${
-      type === "success"
+    <div className={`flex items-center gap-2 px-4 py-3 rounded-lg mb-4 text-sm font-medium border ${type === "success"
         ? "bg-[#e8f8ef] border-[#bbf7d0] text-[#157347]"
         : "bg-[#fee4e2] border-[#fecaca] text-[#b42318]"
-    }`}>
+      }`}>
       {type === "success" ? "✓" : "✕"} {message}
     </div>
   );
@@ -45,22 +42,20 @@ const inp = "w-full mt-1 px-3 py-2 border border-[#d0d5dd] rounded-md text-sm ou
 // ===== Main =====
 function MyProfile() {
   const qc = useQueryClient();
-  const [editMode,              setEditMode]              = useState(false);
-  const [phoneForm,             setPhoneForm]             = useState("");
-  const [addressForm,           setAddressForm]           = useState("");
-  const [showPasswordSection,   setShowPasswordSection]   = useState(false);
-  const [passwordForm,          setPasswordForm]          = useState({ old_password: "", new_password: "", confirm_password: "" });
-  const [successMsg,            setSuccessMsg]            = useState("");
-  const [errorMsg,              setErrorMsg]              = useState("");
+  const [editMode, setEditMode] = useState(false);
+  const [phoneForm, setPhoneForm] = useState("");
+  const [addressForm, setAddressForm] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
 
   const { data: profile, isLoading } = useQuery({
     queryKey: QUERY_KEYS.PROFILE,
-    queryFn:  profileApi.getProfile,
-    select:   (d) => d.data,
+    queryFn: profileApi.getProfile,
+    select: (d) => d.data,
   });
 
   const user = profile;
-  const emp  = profile?.employee;
+  const emp = profile?.employee;
   const supervisor = emp?.supervisor;
 
   const updatePhone = useMutation({
@@ -75,12 +70,6 @@ function MyProfile() {
     onError: (e) => { setErrorMsg(e.message); setSuccessMsg(""); },
   });
 
-  const changePassword = useMutation({
-    mutationFn: profileApi.changePassword,
-    onSuccess: () => { setSuccessMsg("Password changed. Please log in again."); setShowPasswordSection(false); setPasswordForm({ old_password: "", new_password: "", confirm_password: "" }); setErrorMsg(""); },
-    onError: (e) => { setErrorMsg(e.message); setSuccessMsg(""); },
-  });
-
   const openEdit = () => { setPhoneForm(emp?.phone || ""); setAddressForm(emp?.address || ""); setEditMode(true); setSuccessMsg(""); setErrorMsg(""); };
 
   const handleSave = async () => {
@@ -92,14 +81,6 @@ function MyProfile() {
       promises.push(updateAddress.mutateAsync(addressForm.trim()));
     if (!promises.length) { setEditMode(false); return; }
     try { await Promise.all(promises); } catch (e) { setErrorMsg(e.message); }
-  };
-
-  const handlePasswordChange = () => {
-    setErrorMsg("");
-    const { old_password, new_password, confirm_password } = passwordForm;
-    if (!old_password || !new_password || !confirm_password) { setErrorMsg("All password fields are required."); return; }
-    if (new_password !== confirm_password) { setErrorMsg("New passwords do not match."); return; }
-    changePassword.mutate(passwordForm);
   };
 
   const isSaving = updatePhone.isPending || updateAddress.isPending;
@@ -118,7 +99,7 @@ function MyProfile() {
         <p className="text-xs text-[#667085] mb-4">Dashboard &gt; My Profile</p>
 
         <FeedbackBanner type="success" message={successMsg} />
-        <FeedbackBanner type="error"   message={errorMsg} />
+        <FeedbackBanner type="error" message={errorMsg} />
 
         {/* ===== Avatar card — always full-width, centred on mobile ===== */}
         <div className="bg-white border border-[#e6edf5] rounded-xl p-5 mb-4 flex flex-col items-center text-center">
@@ -137,9 +118,9 @@ function MyProfile() {
           <div className="mt-4 pt-4 border-t border-[#edf2f7] w-full grid grid-cols-2 gap-x-4 text-left">
             {[
               { label: "Employee ID", value: `EMP${String(emp?.employee_id || "").padStart(3, "0")}` },
-              { label: "Team",        value: emp?.team?.team_name },
-              { label: "Role",        value: formatRole(user?.role) },
-              { label: "Type",        value: emp?.employment_type },
+              { label: "Team", value: emp?.team?.team_name },
+              { label: "Role", value: formatRole(user?.role) },
+              { label: "Type", value: emp?.employment_type },
             ].map(({ label, value }) => (
               <div key={label} className="py-2">
                 <span className="block text-[10px] text-[#667085]">{label}</span>
@@ -181,9 +162,9 @@ function MyProfile() {
               )}
             </div>
 
-            <InfoItem label="Full Name"   value={emp?.name} />
+            <InfoItem label="Full Name" value={emp?.name} />
             <InfoItem label="Employee ID"><strong className="text-sm text-[#101828]">EMP{String(emp?.employee_id || "").padStart(3, "0")}</strong></InfoItem>
-            <InfoItem label="Email"       value={emp?.email} />
+            <InfoItem label="Email" value={emp?.email} />
 
             <InfoItem label="Phone">
               {editMode
@@ -191,7 +172,7 @@ function MyProfile() {
                 : <strong className="text-sm text-[#101828]">{emp?.phone || "Not set"}</strong>}
             </InfoItem>
 
-            <InfoItem label="ID Number"   value={emp?.id_number} />
+            <InfoItem label="ID Number" value={emp?.id_number} />
 
             <InfoItem label="Address">
               {editMode
@@ -206,57 +187,14 @@ function MyProfile() {
           <div className="bg-white border border-[#e6edf5] rounded-xl p-5">
             <h3 className="m-0 text-[15px] font-bold text-[#1d2939] mb-3">Work Information</h3>
 
-            <InfoItem label="Team"            value={emp?.team?.team_name} />
+            <InfoItem label="Team" value={emp?.team?.team_name} />
             <InfoItem label="Role"><strong className="text-sm text-[#101828]">{formatRole(user?.role)}</strong></InfoItem>
             <InfoItem label="Hourly Rate"><strong className="text-sm text-[#101828]">R{Number(emp?.hourly_rate || 0).toFixed(2)} / hour</strong></InfoItem>
             <InfoItem label="Employment Type" value={emp?.employment_type} />
             <InfoItem label="Join Date"><strong className="text-sm text-[#101828]">{formatDate(emp?.created_at)}</strong></InfoItem>
             <InfoItem label="Supervisor"><strong className="text-sm text-[#101828]">{formatSupervisor(supervisor)}</strong></InfoItem>
-            <InfoItem label="Username"        value={user?.username} />
+            <InfoItem label="Username" value={user?.username} />
             <InfoItem label="Last Login"><strong className="text-sm text-[#101828]">{user?.last_login ? formatDateTime(user.last_login) : "—"}</strong></InfoItem>
-          </div>
-
-          {/* Change Password */}
-          <div className="bg-white border border-[#e6edf5] rounded-xl p-5 md:col-span-2">
-            <div className="flex justify-between items-center">
-              <h3 className="m-0 text-[15px] font-bold text-[#1d2939]">Change Password</h3>
-              <button
-                onClick={() => setShowPasswordSection((v) => !v)}
-                className="bg-[#eaf4ff] text-[#006fd6] border border-[#cfe6ff] rounded-lg px-3 py-1.5 text-xs font-bold cursor-pointer"
-              >
-                {showPasswordSection ? "Cancel" : "Change"}
-              </button>
-            </div>
-
-            {showPasswordSection && (
-              <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {[
-                  { label: "Current Password",  key: "old_password" },
-                  { label: "New Password",       key: "new_password" },
-                  { label: "Confirm Password",   key: "confirm_password" },
-                ].map(({ label, key }) => (
-                  <div key={key}>
-                    <label className="block text-xs text-[#344054] font-bold mb-1">{label}</label>
-                    <input
-                      type="password"
-                      value={passwordForm[key]}
-                      onChange={(e) => setPasswordForm((f) => ({ ...f, [key]: e.target.value }))}
-                      className={inp}
-                    />
-                  </div>
-                ))}
-
-                <div className="sm:col-span-3 flex justify-end mt-1">
-                  <button
-                    onClick={handlePasswordChange}
-                    disabled={changePassword.isPending}
-                    className="bg-[#006fd6] text-white border-none rounded-lg px-5 py-2.5 text-sm font-bold cursor-pointer"
-                  >
-                    {changePassword.isPending ? "Saving..." : "Update Password"}
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </section>

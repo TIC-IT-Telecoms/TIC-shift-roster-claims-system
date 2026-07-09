@@ -5,14 +5,14 @@ import { useQuery } from "@tanstack/react-query";
 import { rosterApi } from "../api/rosterApi";
 import { QUERY_KEYS } from "../utils/queryKeys";
 
-const today    = new Date();
+const today = new Date();
 const todayStr = today.toISOString().split("T")[0];
 
 // ===== Date helpers =====
 const getWeekRange = (offset = 0) => {
   const base = new Date(today);
-  const day  = base.getDay();
-  const mon  = new Date(base);
+  const day = base.getDay();
+  const mon = new Date(base);
   mon.setDate(base.getDate() - (day === 0 ? 6 : day - 1) + offset * 7);
   const sun = new Date(mon);
   sun.setDate(mon.getDate() + 6);
@@ -20,11 +20,11 @@ const getWeekRange = (offset = 0) => {
 };
 
 const getMonthRange = (offset = 0) => {
-  const d   = new Date(today.getFullYear(), today.getMonth() + offset, 1);
+  const d = new Date(today.getFullYear(), today.getMonth() + offset, 1);
   const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
   return {
     start_date: d.toISOString().split("T")[0],
-    end_date:   end > new Date(todayStr) ? todayStr : end.toISOString().split("T")[0],
+    end_date: end > new Date(todayStr) ? todayStr : end.toISOString().split("T")[0],
   };
 };
 
@@ -43,7 +43,7 @@ const fmtTime = (s, e) => (s && e ? `${s.slice(0, 5)} – ${e.slice(0, 5)}` : "�
 
 const getShiftName = (entry) => {
   if (entry.is_public_holiday) return entry.status === "Off" ? "Holiday 🎉" : `${entry.shift?.shift_name?.split(" ")[0] || "Holiday"} 🎉`;
-  if (entry.status === "Off")   return "Day Off";
+  if (entry.status === "Off") return "Day Off";
   return entry.shift?.shift_name || "—";
 };
 
@@ -52,34 +52,34 @@ const getShiftTime = (entry) =>
 
 const getStatusClass = (entry) => {
   if (entry.is_public_holiday) return "status-approved";
-  if (entry.status === "Off")  return "status-off";
+  if (entry.status === "Off") return "status-off";
   return "status-scheduled";
 };
 
 const VIEWS = ["Week", "Month"];
 
 function MyRoster() {
-  const [view,   setView]   = useState("Week");
+  const [view, setView] = useState("Week");
   const [offset, setOffset] = useState(0);
 
   const range = view === "Week" ? getWeekRange(offset) : getMonthRange(offset);
 
   const { data: rosterData, isLoading, isError } = useQuery({
     queryKey: QUERY_KEYS.MY_ROSTER(range),
-    queryFn:  () => rosterApi.getMyRoster(range),
-    select:   (d) => d.data,
+    queryFn: () => rosterApi.getMyRoster(range),
+    select: (d) => d.data,
   });
 
   const rosterList = rosterData?.roster
     ? (Array.isArray(rosterData.roster)
-        ? [...rosterData.roster]
-        : Object.values(rosterData.roster).flat()
-      ).sort((a, b) => a.roster_date.localeCompare(b.roster_date))
+      ? [...rosterData.roster]
+      : Object.values(rosterData.roster).flat()
+    ).sort((a, b) => a.roster_date.localeCompare(b.roster_date))
     : [];
 
   const scheduled = rosterList.filter((r) => r.status === "Scheduled").length;
-  const offDays   = rosterList.filter((r) => r.status === "Off").length;
-  const holidays  = new Set(rosterList.filter((r) => r.is_public_holiday).map((r) => r.roster_date)).size;
+  const offDays = rosterList.filter((r) => r.status === "Off").length;
+  const holidays = new Set(rosterList.filter((r) => r.is_public_holiday).map((r) => r.roster_date)).size;
 
   return (
     <Layout>
@@ -94,9 +94,8 @@ function MyRoster() {
               <button
                 key={v}
                 onClick={() => { setView(v); setOffset(0); }}
-                className={`px-4 py-2 rounded-lg text-sm font-bold border-none cursor-pointer transition-colors ${
-                  view === v ? "bg-[#006fd6] text-white" : "bg-[#eaf4ff] text-[#006fd6]"
-                }`}
+                className={`px-4 py-2 rounded-lg text-sm font-bold border-none cursor-pointer transition-colors ${view === v ? "bg-[#006fd6] text-white" : "bg-[#eaf4ff] text-[#006fd6]"
+                  }`}
               >
                 {v}
               </button>
@@ -132,8 +131,8 @@ function MyRoster() {
         <div className="flex gap-2 flex-wrap mb-4">
           {[
             { label: `${scheduled} Scheduled`, bg: "#eaf4ff", color: "#006fd6" },
-            { label: `${offDays} Off`,          bg: "#f2f4f7", color: "#667085" },
-            { label: `${holidays} Holiday`,     bg: "#f1eaff", color: "#7a3aed" },
+            { label: `${offDays} Off`, bg: "#f2f4f7", color: "#667085" },
+            { label: `${holidays} Holiday`, bg: "#f1eaff", color: "#7a3aed" },
           ].map(({ label, bg, color }) => (
             <span
               key={label}
@@ -155,53 +154,54 @@ function MyRoster() {
             <p className="text-sm text-[#667085] py-4">No roster generated for this period yet.</p>
           ) : (
             <div className="overflow-x-auto -mx-4 px-4">
-              <table className="roster-table min-w-140 w-full">
+              <table className="w-full border-collapse">
                 <thead>
                   <tr>
-                    <th className="text-left">Date</th>
-                    <th className="text-left hidden sm:table-cell">Day</th>
-                    <th className="text-left">Shift</th>
-                    <th className="text-left hidden md:table-cell">Time</th>
-                    <th className="text-left hidden md:table-cell">Break</th>
-                    <th className="text-left">Status</th>
+                    <th className="text-left text-sm text-gray-700 px-3 py-3 border-b border-gray-200">Date</th>
+                    <th className="text-left text-sm text-gray-700 px-3 py-3 border-b border-gray-200 hidden sm:table-cell">Day</th>
+                    <th className="text-left text-sm text-gray-700 px-3 py-3 border-b border-gray-200">Shift</th>
+                    <th className="text-left text-sm text-gray-700 px-3 py-3 border-b border-gray-200">Time</th>
+                    <th className="text-left text-sm text-gray-700 px-3 py-3 border-b border-gray-200 hidden md:table-cell">Break</th>
+                    {/* Status column hidden on mobile */}
+                    <th className="text-left text-sm text-gray-700 px-3 py-3 border-b border-gray-200 hidden sm:table-cell">Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rosterList.map((entry) => {
-                    const isToday   = entry.roster_date === todayStr;
+                    const isToday = entry.roster_date === todayStr;
                     const isHoliday = entry.is_public_holiday;
                     return (
                       <tr
                         key={entry.roster_id}
-                        className={isToday ? "today-row" : ""}
-                        style={isHoliday && !isToday ? { background: "#f9f0ff" } : {}}
+                        className={`${isToday ? "bg-blue-50" : ""} ${isHoliday && !isToday ? "bg-purple-50" : ""}`}
                       >
-                        <td>
+                        <td className="px-3 py-3.5 text-sm border-b border-gray-100">
                           <div className="flex items-center gap-2 flex-wrap">
                             {isToday && (
-                              <span className="bg-[#006fd6] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                              <span className="bg-blue-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
                                 TODAY
                               </span>
                             )}
-                            <span className="text-[13px] text-[#344054]">{formatDisplayDate(entry.roster_date)}</span>
+                            <span className="text-sm text-gray-700">{formatDisplayDate(entry.roster_date)}</span>
                           </div>
                         </td>
-                        <td className="hidden sm:table-cell text-[13px] text-[#667085]">
+                        <td className="hidden sm:table-cell px-3 py-3.5 text-sm text-gray-500 border-b border-gray-100">
                           {formatDay(entry.roster_date)}
                         </td>
-                        <td className="text-[13px] text-[#344054] font-medium">
+                        <td className="px-3 py-3.5 text-sm text-gray-700 font-medium border-b border-gray-100">
                           {getShiftName(entry)}
                           {entry.shift?.is_grave && entry.status !== "Off" && (
-                            <span className="block text-[10px] text-[#7a3aed] font-bold">🌙 Overnight</span>
+                            <span className="block text-[10px] text-purple-600 font-bold">🌙 Overnight</span>
                           )}
                         </td>
-                        <td className="hidden md:table-cell text-[13px] text-[#667085]">
+                        <td className="px-3 py-3.5 text-sm text-gray-500 border-b border-gray-100">
                           {getShiftTime(entry)}
                         </td>
-                        <td className="hidden md:table-cell text-[13px] text-[#667085]">
+                        <td className="hidden md:table-cell px-3 py-3.5 text-sm text-gray-500 border-b border-gray-100">
                           {entry.status === "Scheduled" ? "30m" : "—"}
                         </td>
-                        <td>
+                        {/* Status cell hidden on mobile */}
+                        <td className="hidden sm:table-cell px-3 py-3.5 border-b border-gray-100">
                           <span className={getStatusClass(entry)}>
                             {entry.is_public_holiday ? "Holiday 🎉" : entry.status}
                           </span>
@@ -212,6 +212,7 @@ function MyRoster() {
                 </tbody>
               </table>
             </div>
+
           )}
 
           <p className="roster-note mt-4">Note: Roster is subject to change. Please check regularly.</p>
