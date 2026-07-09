@@ -100,7 +100,7 @@ function Notifications() {
             <p className="text-gray-500 text-sm flex items-center">
               Your latest system updates.
               {unreadCount > 0 && (
-                <span className="ml-2 bg-blue-600 text-white px-2 py-0.5 rounded-full text-xs font-bold">
+                <span className="ml-2 bg-blue-600 hidden md:flex text-white px-2 py-0.5 rounded-full text-xs font-bold">
                   {unreadCount} new
                 </span>
               )}
