@@ -135,8 +135,8 @@ function Notifications() {
             <button
               key={f}
               className={`pb-2 text-sm font-bold transition-colors ${filter === f
-                  ? "text-blue-600 border-b-2 border-blue-600"
-                  : "text-gray-500"
+                ? "text-blue-600 border-b-2 border-blue-600"
+                : "text-gray-500"
                 }`}
               onClick={() => setFilter(f)}
             >
@@ -179,8 +179,8 @@ function Notifications() {
                 <div
                   key={notif.notification_id}
                   className={`flex items-start gap-3 p-4 mb-2 rounded-lg transition cursor-pointer ${read
-                      ? "bg-white border-l-4 border-transparent"
-                      : "bg-blue-50 border-l-4"
+                    ? "bg-white border-l-4 border-transparent"
+                    : "bg-blue-50 border-l-4"
                     }`}
                   style={{ borderLeftColor: read ? "transparent" : config.color }}
                   onClick={() => handleClick(notif)}

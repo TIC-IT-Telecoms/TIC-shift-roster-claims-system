@@ -6,7 +6,7 @@ import { teamApi } from "../api/teamApi";
 import { QUERY_KEYS } from "../utils/queryKeys";
 import { formatDate, getTodayStr, getMonthStart } from "../utils/helpers";
 import {
-  useComplianceFlags,   useMyComplianceFlags, useRunComplianceCheck, 
+  useComplianceFlags, useMyComplianceFlags, useRunComplianceCheck,
   useRunBulkCheck, useResolveFlag, useDeleteFlag,
 } from "../hooks/useCompliance";
 import { useAuthStore } from "../store/authStore";
@@ -238,7 +238,7 @@ const TABS = ["All", "Open", "Resolved"];
 const SEVERITIES = ["All", "High", "Medium", "Low"];
 
 function Compliance() {
-  const role = useAuthStore((s) => s.user?.user?.role) || "Employee";
+  const role = useAuthStore((s) => s.user?.user?.user?.role) || "Employee";
   const isAdmin = role === "Admin";
 
   const [tab, setTab] = useState("All");
