@@ -6,19 +6,19 @@ import { useAuthStore } from "../store/authStore";
 import { QUERY_KEYS } from "../utils/queryKeys";
 import { formatEmpId, formatRole } from "../utils/helpers";
 
-const inputStyle = {
-  width: "100%", padding: "11px", border: "1px solid #d0d5dd",
-  borderRadius: 8, outline: "none", fontSize: 13,
-  fontFamily: "inherit", boxSizing: "border-box",
-};
-
-// ===== Toggle Switch =====
+// ===== Toggle Switch (Tailwind peer-based) =====
 const Toggle = ({ label, checked, onChange }) => (
-  <div className="toggle-row">
-    <span>{label}</span>
-    <label className="switch">
-      <input type="checkbox" checked={checked} onChange={onChange} />
-      <b />
+  <div className="flex justify-between items-center py-3 border-b border-gray-100">
+    <span className="text-sm text-gray-700">{label}</span>
+    <label className="relative inline-flex items-center cursor-pointer">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={onChange}
+        className="sr-only peer"
+      />
+      <div className="w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-blue-600 transition-colors"></div>
+      <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full peer-checked:translate-x-5 transform transition-transform"></div>
     </label>
   </div>
 );
@@ -58,7 +58,6 @@ function Settings() {
       setSuccessMsg("Password changed. You will be logged out.");
       setPasswordForm({ old_password: "", new_password: "", confirm_password: "" });
       setErrorMsg("");
-      // Log out after password change
       setTimeout(() => {
         clearAuth();
         window.location.href = "/";
@@ -88,68 +87,59 @@ function Settings() {
 
   return (
     <Layout>
-      <section className="content">
-        <div className="breadcrumb">Dashboard &gt; Settings</div>
+      <section className="p-6">
+        <div className="text-sm text-gray-500 mb-4">Dashboard &gt; Settings</div>
 
-        <div className="page-title-row" style={{ marginBottom: 24 }}>
-          <div>
-            <h2>Settings</h2>
-            <p className="subtitle">Manage your account preferences.</p>
-          </div>
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold">Settings</h2>
+          <p className="text-gray-500 text-sm">Manage your account preferences.</p>
         </div>
 
         {/* ===== Feedback ===== */}
         {successMsg && (
-          <div style={{
-            background: "#e8f8ef", border: "1px solid #bbf7d0",
-            color: "#157347", padding: "10px 16px",
-            borderRadius: 8, marginBottom: 18, fontSize: 13,
-          }}>
+          <div className="bg-green-50 border border-green-200 text-green-700 
+                          p-3 rounded-lg mb-4 text-sm flex items-center gap-2">
             ✓ {successMsg}
           </div>
         )}
         {errorMsg && (
-          <div style={{
-            background: "#fee4e2", border: "1px solid #fecaca",
-            color: "#b42318", padding: "10px 16px",
-            borderRadius: 8, marginBottom: 18, fontSize: 13,
-          }}>
+          <div className="bg-red-50 border border-red-200 text-red-700 
+                          p-3 rounded-lg mb-4 text-sm flex items-center gap-2">
             ✕ {errorMsg}
           </div>
         )}
 
-        <div className="settings-grid">
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* ===== Change Password ===== */}
-          <div className="settings-card">
-            <h3>Change Password</h3>
-            <p style={{ color: "#667085", fontSize: 13, marginTop: -8, marginBottom: 16 }}>
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <h3 className="text-lg font-semibold">Change Password</h3>
+            <p className="text-gray-500 text-sm mt-1 mb-4">
               You will be logged out after changing your password.
             </p>
 
-            <form onSubmit={handlePasswordSubmit}>
+            <form onSubmit={handlePasswordSubmit} className="space-y-4">
               {[
                 { key: "old_password", label: "Current Password" },
                 { key: "new_password", label: "New Password" },
                 { key: "confirm_password", label: "Confirm New Password" },
               ].map(({ key, label }) => (
-                <div className="form-group" key={key}>
-                  <label>{label}</label>
+                <div key={key}>
+                  <label className="block text-sm text-gray-700 mb-1">{label}</label>
                   <input
                     type="password"
-                    style={inputStyle}
+                    className="w-full border border-gray-300 rounded-lg p-3 text-sm 
+                               focus:border-blue-600 focus:ring focus:ring-blue-200"
                     placeholder="••••••••"
                     value={passwordForm[key]}
                     onChange={setPass(key)}
-                    onFocus={(e) => (e.target.style.borderColor = "#006fd6")}
-                    onBlur={(e) => (e.target.style.borderColor = "#d0d5dd")}
                   />
                 </div>
               ))}
 
               <button
                 type="submit"
-                className="primary-btn"
+                className="w-full bg-blue-600 text-white py-2 rounded-lg font-bold 
+                           hover:bg-blue-700 disabled:opacity-50"
                 disabled={changePassword.isPending}
               >
                 {changePassword.isPending ? "Updating..." : "Update Password"}
@@ -157,15 +147,13 @@ function Settings() {
             </form>
           </div>
 
-          <div>
-            {/* ===== Notification Preferences ===== */}
-            <div className="settings-card" style={{ marginBottom: 18 }}>
-              <h3>Notification Preferences</h3>
-              <p style={{ color: "#667085", fontSize: 13, marginTop: -8, marginBottom: 12 }}>
-                {/* TODO: Wire to backend notifications settings when built */}
+          {/* ===== Notification Preferences & Account Info ===== */}
+          <div className="space-y-6">
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <h3 className="text-lg font-semibold">Notification Preferences</h3>
+              <p className="text-gray-500 text-sm mt-1 mb-4">
                 Preferences saved locally for now.
               </p>
-
               <Toggle
                 label="Email Notifications"
                 checked={notifications.email}
@@ -188,10 +176,8 @@ function Settings() {
               />
             </div>
 
-            {/* ===== Account Information ===== */}
-            <div className="settings-card">
-              <h3>Account Information</h3>
-
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <h3 className="text-lg font-semibold">Account Information</h3>
               {[
                 { label: "Employee ID", value: emp ? formatEmpId(emp.employee_id) : "—" },
                 { label: "Username", value: user?.username || "—" },
@@ -201,12 +187,12 @@ function Settings() {
                 {
                   label: "Account Status",
                   value: null,
-                  custom: <strong className="active-text">{emp?.status || "Active"}</strong>,
+                  custom: <strong className="text-green-700">{emp?.status || "Active"}</strong>,
                 },
               ].map(({ label, value, custom }) => (
-                <div className="account-row" key={label}>
-                  <span>{label}</span>
-                  {custom || <strong>{value}</strong>}
+                <div key={label} className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-500 text-sm">{label}</span>
+                  {custom || <strong className="text-sm">{value}</strong>}
                 </div>
               ))}
             </div>

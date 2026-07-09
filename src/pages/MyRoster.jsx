@@ -111,7 +111,7 @@ function MyRoster() {
             className="bg-[#006fd6] text-white border-none rounded-lg px-3 py-2 font-bold cursor-pointer text-base"
           >‹</button>
 
-          <div className="flex-1 min-w-0 text-center bg-white border border-[#dbe7f3] rounded-lg px-3 py-2 font-bold text-[#344054] text-sm truncate">
+          <div className="flex-1 md:flex-none min-w-0 text-center bg-white border border-[#dbe7f3] rounded-lg px-3 py-2 font-bold text-[#344054] text-sm truncate">
             {formatRangeLabel(range)}
           </div>
 
