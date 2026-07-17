@@ -288,7 +288,7 @@ function App() {
             />
 
             <Route
-              path="/payroll-admin"
+              path="/admin-payroll"
               element={
                 <ProtectedRoute allowedRoles={["Admin"]}>
                   <AdminPayroll />
@@ -297,7 +297,7 @@ function App() {
             />
 
             <Route
-              path="/payroll-admin/generate"
+              path="/admin-payroll/generate"
               element={
                 <ProtectedRoute allowedRoles={["Admin"]}>
                   <GeneratePayroll />
